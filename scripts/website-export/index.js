@@ -1,55 +1,22 @@
-// Website Export Formatter for Guttmacher Legislative Tracker
+// Updated Website Export Script for Guttmacher Policy Tracker
 
 const CONFIG = {
-    // Field mappings based on actual bills table structure
+    // Field mappings based on current bills table structure - only fields used in the export
     FIELDS: {
         BILL_ID: 'BillID',
-        ACCESS_ID: 'Access ID',
         STATE: 'State',
-        BILL_TYPE: 'BillType', 
+        BILL_TYPE: 'BillType',
         BILL_NUMBER: 'BillNumber',
-        DESCRIPTION: 'Description',
-        CURRENT_BILL_STATUS: 'Current Bill Status',
-        BILL_STATUS_HISTORY: 'Bill Status History',
-        HISTORY: 'History',
         LAST_ACTION: 'Last Action',
-        LAST_ACTION_DATE: 'Last Action',
-        POLICY_CATEGORIES: 'Policy Categories',
+        INTENT: 'Intent',
+        SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
         WEBSITE_BLURB: 'Website Blurb',
         READY_FOR_WEBSITE: 'Ready for Website',
-        LAST_WEBSITE_EXPORT: 'Last Website Export'
-    },
-
-    // Mapping for website-friendly categories
-    WEBSITE_CATEGORIES: {
-        'Abortion': { 
-            matches: ['Abortion', 'Abortion Medication', 'Fetal Issues', 'Fetal Tissue'],
-            field: 'Abortion' 
-        },
-        'Contraception': { 
-            matches: ['Contraception', 'Emergency Contraception'],
-            field: 'Contraception' 
-        },
-        'Family Planning': { 
-            matches: ['Family Planning', 'Reproductive Health'],
-            field: 'FamilyPlanning' 
-        },
-        'Insurance': { 
-            matches: ['Insurance', 'Coverage'],
-            field: 'Insurance' 
-        },
-        'Youth Access': { 
-            matches: ['Youth', 'Sex Ed', 'STIs'],
-            field: 'YouthAccess' 
-        },
-        'Pregnancy Support': { 
-            matches: ['Pregnancy', 'Appropriations'],
-            field: 'PregnancySupport' 
-        },
-        'Crisis Pregnancy Centers': {
-            matches: ['Crisis Pregnancy Centers', 'CPC'],
-            field: 'CrisisPregnancyCenters'
-        }
+        INTRODUCED_DATE: 'Introduction Date',
+        PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
+        VETOED_DATE: 'Vetoed Date',
+        ENACTED_DATE: 'Enacted Date',
+        ACTION_TYPE: 'Action Type'
     },
 
     // Export table field mapping
@@ -71,10 +38,56 @@ async function transformRecord(record) {
         const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
         const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
         const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
-        const summary = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
-        const policyCategoriesText = record.getCellValue(CONFIG.FIELDS.POLICY_CATEGORIES) || '';
-        const currentStatus = record.getCellValue(CONFIG.FIELDS.CURRENT_BILL_STATUS)?.name || '';
-        const billStatusHistory = record.getCellValue(CONFIG.FIELDS.BILL_STATUS_HISTORY)?.name || '';
+        const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
+        // Format dates properly for export
+        const formatDate = (dateValue) => {
+            if (!dateValue) return null;
+            
+            // If it's already a string, return it as is
+            if (typeof dateValue === 'string') return dateValue;
+            
+            // If it's a Date object, format it as YYYY-MM-DD
+            if (dateValue instanceof Date) {
+                return dateValue.toISOString().split('T')[0];
+            }
+            
+            // If it's another format, try to convert to string
+            return String(dateValue);
+        };
+        
+        // Extract date fields directly from the table
+        const lastActionDate = formatDate(record.getCellValue(CONFIG.FIELDS.LAST_ACTION));
+        const introducedDate = formatDate(record.getCellValue(CONFIG.FIELDS.INTRODUCED_DATE));
+        const passed1ChamberDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED1_CHAMBER_DATE));
+        const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
+        const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
+
+        // Get intent values (Positive, Neutral, Restrictive)
+        const intent = record.getCellValue(CONFIG.FIELDS.INTENT) || [];
+        const intentArray = Array.isArray(intent) ? intent.map(i => i.name) : [];
+        
+        // Check for Ballot Initiative based on Action Type field
+        const actionType = record.getCellValue(CONFIG.FIELDS.ACTION_TYPE) || [];
+        const actionTypeArray = Array.isArray(actionType) 
+            ? actionType.map(i => i.name) 
+            : typeof actionType === 'string' 
+                ? actionType.split(',').map(i => i.trim()) 
+                : [];
+        
+        const ballotInitiative = actionTypeArray.includes('Ballot Initiative') ? '1' : '0';
+        
+        // Court Case handling - assuming it's a similar field
+        // Adjust this logic based on your actual data structure
+        const courtCase = actionTypeArray.includes('Court Case') ? '1' : '0';
+
+        // Extract subpolicies - ONLY from specific policies (access)
+        const specificPoliciesAccess = getSpecificPolicies(record.getCellValue(CONFIG.FIELDS.SPECIFIC_POLICIES_ACCESS)) || [];
+        
+        // Create an array of exactly 10 subpolicies (padding with empty strings if needed)
+        const subpolicies = specificPoliciesAccess.slice(0, 10);
+        while (subpolicies.length < 10) {
+            subpolicies.push('');
+        }
 
         // Validate required fields
         const missingFields = [];
@@ -89,75 +102,54 @@ async function transformRecord(record) {
             throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
 
-        // Parse policy categories
-        const policyCategories = Array.isArray(policyCategoriesText) 
-            ? policyCategoriesText 
-            : (policyCategoriesText || '')
-                .toString()
-                .split(',')
-                .map(cat => cat.trim())
-                .filter(cat => cat !== '');
-
-        // Determine bill status
-        const statusFlags = determineStatusFlags(currentStatus, billStatusHistory);
-
-        // Map policy categories to flags
-        const categoryFlags = mapPolicyCategories(policyCategories);
-
-        // Construct export record
+        // Construct export record according to the website team's requirements
         return {
-            ID: record.getCellValue(CONFIG.FIELDS.BILL_ID),
             State: state,
             BillType: billType,
             BillNumber: billNumber,
-            BillDescription: record.getCellValue(CONFIG.FIELDS.DESCRIPTION),
-            WebsiteBlurb: summary,
-            LastActionDate: record.getCellValue(CONFIG.FIELDS.LAST_ACTION_DATE),
-            History: record.getCellValue(CONFIG.FIELDS.HISTORY),
-            ...categoryFlags,
-            ...statusFlags
+            "Ballot Initiative": ballotInitiative,
+            "Court Case": courtCase,
+            SubPolicy1: subpolicies[0],
+            SubPolicy2: subpolicies[1],
+            SubPolicy3: subpolicies[2],
+            SubPolicy4: subpolicies[3],
+            SubPolicy5: subpolicies[4],
+            SubPolicy6: subpolicies[5],
+            SubPolicy7: subpolicies[6],
+            SubPolicy8: subpolicies[7],
+            SubPolicy9: subpolicies[8],
+            SubPolicy10: subpolicies[9],
+            WebsiteBlurb: websiteBlurb,
+            "Last Action Date": lastActionDate,
+            IntroducedDate: introducedDate,
+            Passed1ChamberDate: passed1ChamberDate,
+            PassedLegislature: passed1ChamberDate, // Using the same field for now - adjust if needed
+            VetoedDate: vetoedDate,
+            EnactedDate: enactedDate,
+            Positive: intentArray.includes('Protective') ? '1' : '0',
+            Neutral: intentArray.includes('Neutral') ? '1' : '0',
+            Restrictive: intentArray.includes('Restrictive') ? '1' : '0'
         };
     } catch (error) {
         throw new Error(`Transformation error: ${error.message}`);
     }
 }
 
-// Determine bill status flags
-function determineStatusFlags(currentStatus, billStatusHistory) {
-    return {
-        Introduced: billStatusHistory.includes('Introduced') ? '1' : '0',
-        Passed1Chamber: billStatusHistory.includes('Passed 1 Chamber') ? '1' : '0',
-        Passed2Chamber: billStatusHistory.includes('Passed 2 Chamber') ? '1' : '0',
-        OnGovDesk: billStatusHistory.includes('On Govs Desk') ? '1' : '0',
-        Enacted: currentStatus === 'Enacted' ? '1' : '0',
-        Vetoed: currentStatus === 'Vetoed' ? '1' : '0',
-        Dead: currentStatus === 'Dead' ? '1' : '0'
-    };
-}
-
-// Map policy categories to flags
-function mapPolicyCategories(policyCategories) {
-    const categoryMappings = {
-        Abortion: ['Abortion', 'Abortion Medication'],
-        Appropriations: ['Appropriations'],
-        Contraception: ['Contraception'],
-        FamilyPlanning: ['Family Planning'],
-        Insurance: ['Insurance'],
-        PeriodProducts: ['Period Products'],
-        Pregnancy: ['Pregnancy'],
-        Refusal: ['Refusal'],
-        SexEd: ['Sex Ed'],
-        STIs: ['STIs'],
-        Youth: ['Youth'],
-        CrisisPregnancyCenters: ['Crisis Pregnancy Centers']
-    };
-
-    return Object.fromEntries(
-        Object.entries(categoryMappings).map(([key, matches]) => [
-            key, 
-            policyCategories.some(cat => matches.includes(cat)) ? '1' : '0'
-        ])
-    );
+// Helper function to extract specific policies from various fields
+function getSpecificPolicies(policyField) {
+    if (!policyField) return [];
+    
+    // Handle if it's an array of select options
+    if (Array.isArray(policyField)) {
+        return policyField.map(p => p.name || p);
+    }
+    
+    // Handle if it's a string
+    if (typeof policyField === 'string') {
+        return policyField.split(',').map(p => p.trim()).filter(p => p);
+    }
+    
+    return [];
 }
 
 // Generate a unique batch ID for this export
@@ -185,29 +177,45 @@ function generateSummary(records, errors, batchId) {
     summary.push(`- Successfully exported: ${records.length}`);
     summary.push(`- Errors encountered: ${errors.length}\n`);
 
-    // Category breakdown
+    // Category breakdown by intent
     if (records.length > 0) {
-        const categoryStats = {};
-        const categoryFields = [
-            'Abortion', 'Appropriations', 'Contraception', 
-            'FamilyPlanning', 'Insurance', 'PeriodProducts', 
-            'Pregnancy', 'Refusal', 'SexEd', 'STIs', 'Youth'
-        ];
+        const intentStats = {
+            Positive: 0,
+            Neutral: 0,
+            Restrictive: 0
+        };
 
         records.forEach(record => {
-            categoryFields.forEach(category => {
-                if (record.fields[category] === 'Yes') {
-                    categoryStats[category] = (categoryStats[category] || 0) + 1;
-                }
-            });
+            if (record.fields.Positive === '1') intentStats.Positive++;
+            if (record.fields.Neutral === '1') intentStats.Neutral++;
+            if (record.fields.Restrictive === '1') intentStats.Restrictive++;
         });
 
-        if (Object.keys(categoryStats).length > 0) {
-            summary.push(`📑 **Category Breakdown**`);
-            Object.entries(categoryStats)
+        summary.push(`📑 **Intent Breakdown**`);
+        Object.entries(intentStats)
+            .sort(([, a], [, b]) => b - a)
+            .forEach(([intent, count]) => {
+                if (count > 0) {
+                    summary.push(`- ${intent}: ${count}`);
+                }
+            });
+        summary.push('');
+    }
+
+    // State breakdown
+    if (records.length > 0) {
+        const stateStats = {};
+        records.forEach(record => {
+            const state = record.fields.State;
+            stateStats[state] = (stateStats[state] || 0) + 1;
+        });
+
+        if (Object.keys(stateStats).length > 0) {
+            summary.push(`🌎 **State Breakdown**`);
+            Object.entries(stateStats)
                 .sort(([, a], [, b]) => b - a)
-                .forEach(([category, count]) => {
-                    summary.push(`- ${category}: ${count}`);
+                .forEach(([state, count]) => {
+                    summary.push(`- ${state}: ${count}`);
                 });
             summary.push('');
         }
@@ -222,6 +230,14 @@ function generateSummary(records, errors, batchId) {
     }
 
     return summary.join('\n');
+}
+
+// Update bills with export information
+async function updateExportedBills(billsTable, exportedBillIds, batchId) {
+    // Since 'Exported to Website Date' is a computed field, we don't need to update it directly
+    // We could potentially log the exports separately if needed
+    
+    return exportedBillIds.length; // Just return the count of exported bills
 }
 
 // Main export function
@@ -242,6 +258,7 @@ async function generateWebsiteExport() {
 
     const exportRecords = [];
     const errors = [];
+    const exportedBillIds = [];
 
     // Process each bill
     for (const record of records.records) {
@@ -255,13 +272,12 @@ async function generateWebsiteExport() {
                         [CONFIG.EXPORT_FIELDS.EXPORT_BATCH]: batchId,
                         [CONFIG.EXPORT_FIELDS.BILL_RECORD]: [{id: record.id}],
                         [CONFIG.EXPORT_FIELDS.EXPORTED_BY]: 'Automation',
-                        ...Object.fromEntries(
-                            Object.entries(webRecord).map(([key, value]) => [key, value])
-                        )
+                        ...webRecord
                     }
                 };
                 
                 exportRecords.push(exportRecord);
+                exportedBillIds.push(record.id);
             }
         } catch (error) {
             errors.push({
@@ -280,6 +296,9 @@ async function generateWebsiteExport() {
                 await exportTable.createRecordsAsync(batch);
                 output.markdown(`Created ${batch.length} export records`);
             }
+            
+            // No longer trying to update 'Exported to Website Date' since it's computed
+            output.markdown(`Successfully exported ${exportedBillIds.length} bills`);
         } catch (error) {
             output.markdown(`⚠️ **Error creating export records:** ${error.message}`);
         }
