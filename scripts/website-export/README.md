@@ -1,155 +1,159 @@
-# State Legislation Tracker: Website Export Formatter
+# Guttmacher Policy Tracker: Website Export Script
 
 ## 📝 Overview
 
-This Airtable script automates the export of legislative bill data for a website tracking state legislation. It transforms raw bill records into a structured format suitable for web publication.
+This Airtable script automates the export of legislative bill data from the Policy Tracker to a format compatible with the external website display. It transforms bill records into a consistent format that matches the website's expected structure.
 
-## 🌟 Features
+## 🌟 Key Features
 
-- Automated bill data export
-- Dynamic policy category mapping
+- Automated export of website-ready bills 
+- Proper formatting of dates and policy fields
+- Extraction of subpolicies from the access database
+- Mapping of intent tags (Protective, Neutral, Restrictive)
 - Comprehensive export logging
-- Error handling and reporting
+- Detailed error reporting
 
 ## 🔧 Prerequisites
 
-- Airtable account
-- Two tables in your base:
-  1. "Bills" table
-  2. "Website Exports" table
+- Airtable base with two tables:
+  1. "Bills" table - containing tracked legislation
+  2. "Website Exports" table - storing export history
 
-## Configuration
-### Bills Table Fields
+## 🚀 How to Use
+
+1. **Prepare Bills for Export**:
+   - Complete the "Website Blurb" field with the public-facing description
+   - Check the "Ready for Website" checkbox
+   - Make sure all subpolicies are properly tagged in "Specific Policies (access)"
+
+2. **Run the Script**:
+   - Navigate to the Automations or Scripts panel
+   - Run the "Website Export" script
+   - Review the export summary
+
+3. **Review Exports**:
+   - The script creates new records in the Website Exports table
+   - Each export includes a unique batch ID for tracking
+   - Lookup fields in the Bills table will automatically update
+
+## 🔍 What Gets Exported
+
+The script maps the following fields:
+
+### Core Bill Information
+- State
+- BillType
+- BillNumber
+- Ballot Initiative (derived from Action Type)
+- Court Case (derived from Action Type)
+
+### Content
+- WebsiteBlurb
+- SubPolicy1-10 (from Specific Policies (access))
+
+### Dates
+- Last Action Date
+- IntroducedDate
+- Passed1ChamberDate
+- VetoedDate
+- EnactedDate
+
+### Intent Tags
+- Positive (if Intent includes "Protective")
+- Neutral (if Intent includes "Neutral")
+- Restrictive (if Intent includes "Restrictive")
+
+## ⚙️ Configuration
+
+The script uses a CONFIG object to map fields between the Bills table and the export format:
+
+```javascript
+const CONFIG = {
+    FIELDS: {
+        BILL_ID: 'BillID',
+        STATE: 'State',
+        BILL_TYPE: 'BillType',
+        BILL_NUMBER: 'BillNumber',
+        LAST_ACTION: 'Last Action',
+        INTENT: 'Intent',
+        SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
+        WEBSITE_BLURB: 'Website Blurb',
+        READY_FOR_WEBSITE: 'Ready for Website',
+        INTRODUCED_DATE: 'Introduction Date',
+        PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
+        VETOED_DATE: 'Vetoed Date',
+        ENACTED_DATE: 'Enacted Date',
+        ACTION_TYPE: 'Action Type'
+    }
+};
+```
+
+## 📊 Export Summary
+
+Each export generates a detailed report including:
+- Batch details and timestamp
+- Number of successfully exported bills
+- Intent breakdown (Positive/Neutral/Restrictive)
+- State breakdown
+- Any errors encountered
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Missing Required Fields**:
+   - Error will specify which fields are missing
+   - Fill in all required information and try again
+
+2. **Date Formatting Issues**:
+   - Ensure date fields contain valid dates
+   - Check that Last Action is properly formatted
+
+3. **No Bills Ready for Export**:
+   - Verify the "Ready for Website" checkbox is checked
+   - Make sure Website Blurb is not empty
+
+4. **SubPolicy Fields Missing**:
+   - Ensure "Specific Policies (access)" field is populated
+   - The script will only export the first 10 subpolicies
+
+### Field Naming
+
+If you rename fields in your Airtable base, you must update the corresponding mappings in the CONFIG object to match exactly.
+
+## 📋 Export Table Structure
+
+The Website Exports table requires these fields:
+
 | Field Name | Description | Type |
-|-----------|-------------|------|
-| BillID | Unique identifier for the bill | Text |
-| Access ID | Internal tracking number | Text |
-| State | State jurisdiction | Text |
+|------------|-------------|------|
+| Batch ID | Unique export identifier | Text |
+| Export Date | Timestamp of export | Date/Time |
+| Bill Record | Link to source bill | Linked Record |
+| Exported By | Source of export | Text |
+| State | State abbreviation | Text |
 | BillType | Type of bill | Text |
 | BillNumber | Specific bill number | Text |
-| Description | Full bill description | Long Text |
-| Current Bill Status | Current legislative status | Text |
-| Bill Status History | Progression of bill status | Text (Comma-Separated) |
-| History | Detailed legislative history | Long Text |
-| Last Action | Most recent legislative action | Text |
-| Introduction Date | Date bill was introduced | Date |
-| Enacted Date | Date bill was enacted | Date |
-| Passed Legislature Date | Date bill passed legislature | Date |
-| Effective Date | Date bill takes effect | Date |
-| Action Type | Type of legislative action | Text |
-| Intent | Legislative intent | Text |
-| Specific Policies | Specific policy details | Text |
-| Policy Categories | Bill's policy domains | Text (Comma-Separated) |
-| Prefiled | Prefiling status | Checkbox |
-| Review Status | Current review stage | Text |
-| Internal Notes | Internal commentary | Long Text |
-| Website Blurb | Website-ready summary | Long Text |
-| Ready for Website | Export eligibility flag | Checkbox |
-| Last Website Export | Timestamp of last export | Date |
-| Assigned To | Team member assigned | Text |
-| Assignment Date | Date of team assignment | Date |
+| Ballot Initiative | Flag for ballot initiatives | Text |
+| Court Case | Flag for court cases | Text |
+| SubPolicy1-10 | Individual policy components | Text |
+| WebsiteBlurb | Website-ready description | Long Text |
+| Last Action Date | Most recent date | Date |
+| IntroducedDate | Introduction date | Date |
+| Passed1ChamberDate | First chamber passage | Date |
+| VetoedDate | Veto date | Date |
+| EnactedDate | Enactment date | Date |
+| Positive | Protective intent flag | Text |
+| Neutral | Neutral intent flag | Text |
+| Restrictive | Restrictive intent flag | Text |
 
-### Website Exports Table Fields
-| Field Name | Description | Type |
-|-----------|-------------|------|
-| Export Date | Timestamp of export | Date/Time |
-| Batch ID | Unique export batch identifier | Text |
-| Bill Record | Link back to original bill | Linked Record |
-| State | State jurisdiction | Text |
-| BillType | Type of legislative bill | Text |
-| BillNumber | Specific bill number | Text |
-| BillDescription | Full bill description | Long Text |
-| WebsiteBlurb | Website-ready summary | Long Text |
-| LastActionDate | Most recent action date | Date |
-| History | Full legislative history | Long Text |
-| Exported By | Export source | Text |
-| Abortion | Abortion-related indicator | Text (Yes/No) |
-| Appropriations | Appropriations indicator | Text (Yes/No) |
-| Contraception | Contraception indicator | Text (Yes/No) |
-| FamilyPlanning | Family planning indicator | Text (Yes/No) |
-| Insurance | Insurance-related indicator | Text (Yes/No) |
-| PeriodProducts | Period products indicator | Text (Yes/No) |
-| Pregnancy | Pregnancy-related indicator | Text (Yes/No) |
-| Refusal | Refusal provisions indicator | Text (Yes/No) |
-| SexEd | Sex education indicator | Text (Yes/No) |
-| STIs | STI-related indicator | Text (Yes/No) |
-| Youth | Youth-related indicator | Text (Yes/No) |
-| Introduced | Introduction status | Text (Yes/No) |
-| Passed1Chamber | First chamber passage | Text (Yes/No) |
-| Passed2Chamber | Second chamber passage | Text (Yes/No) |
-| OnGovDesk | Governor's desk status | Text (Yes/No) |
-| Enacted | Enactment status | Text (Yes/No) |
-| Vetoed | Veto status | Text (Yes/No) |
-| Dead | Bill status | Text (Yes/No) |
+## 🔄 Update Process
 
-## 🚀 Export Process
+The full website update process involves:
 
-1. Mark bills as "Ready for Website"
-2. Run script
-3. Bills are automatically:
-   - Validated
-   - Categorized
-   - Exported to Website Exports table
-   - Timestamped
+1. Running this export script
+2. Downloading the CSV from the Website Exports table
+3. Providing the CSV to the website team
+4. Website team uploads and processes the data
 
-## 📊 Categories Mapped
-
-- Abortion
-- Crisis Pregnancy Centers
-- Family Planning
-- Insurance Coverage
-- Youth Access
-- Period Products
-- Pregnancy
-
-## 💡 Configuration Options
-
-Customize mappings in the `CONFIG` object:
-- Adjust field names
-- Add/modify website categories
-- Define proactive intent criteria
-
-## 🔍 Export Summary
-
-Each export generates a detailed markdown report:
-- Batch details
-- Record statistics
-- Category breakdown
-- Error logs
-
-## 🛡️ Error Handling
-
-- Validates required fields
-- Logs transformation errors
-- Prevents incomplete exports
-
-## Script Usage
-
-### Running the Script
-
-1. Open the "Bills" table in Airtable
-2. Navigate to the Scripting tab
-3. Paste the entire script
-4. Click "Run"
-
-### Preparing Bills for Export
-
-- Ensure all required fields are filled
-- Check the "Ready for Website" checkbox
-- Verify the "Website Blurb" is complete
-
-## 🤝 Contributing
-
-1. Fork repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Create pull request
-
-## 🐛 Troubleshooting
-
-- Ensure all field names match exactly in the `CONFIG` object
-- Verify "Ready for Website" checkbox is set
-- Check that "Website Blurb" is not empty
-- Review the export summary for any error messages
-
+Typically this process happens bi-monthly (1st and 15th).
