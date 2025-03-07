@@ -1,48 +1,66 @@
-// Updated Website Export Script for Guttmacher Policy Tracker
+// ========================================================================
+// Guttmacher Policy Tracker: Website Export Script
+// Purpose: Automates export of policy tracking data to website-compatible format
+// ========================================================================
 
+// Configuration object to map field names between Airtable tables and export format
 const CONFIG = {
-    // Field mappings based on current bills table structure - only fields used in the export
+    // Maps field names from the Bills table to make script resistant to field name changes
     FIELDS: {
-        BILL_ID: 'BillID',
-        STATE: 'State',
-        BILL_TYPE: 'BillType',
-        BILL_NUMBER: 'BillNumber',
-        LAST_ACTION: 'Last Action',
-        INTENT: 'Intent (access)',
-        SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
-        WEBSITE_BLURB: 'Website Blurb',
-        READY_FOR_WEBSITE: 'Ready for Website',
-        INTRODUCED_DATE: 'Introduction Date',
-        PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
-        VETOED_DATE: 'Vetoed Date',
-        ENACTED_DATE: 'Enacted Date',
-        ACTION_TYPE: 'Action Type'
+        BILL_ID: 'BillID',                              // Unique identifier for the bill
+        STATE: 'State',                                 // State abbreviation (select field)
+        BILL_TYPE: 'BillType',                          // Type of bill (H/S/etc.)
+        BILL_NUMBER: 'BillNumber',                      // The specific bill number
+        LAST_ACTION: 'Last Action',                     // Most recent action date
+        INTENT: 'Intent (access)',                      // Policy intent tags (Protective/Neutral/Restrictive)
+        SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)', // Detailed policy categorization
+        WEBSITE_BLURB: 'Website Blurb',                 // Public-facing description
+        READY_FOR_WEBSITE: 'Ready for Website',         // Flag to indicate web-ready
+        INTRODUCED_DATE: 'Introduction Date',           // When bill was introduced
+        PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',  // When passed first chamber
+        PASSED_LEGISLATURE_DATE: 'Passed Legislature Date', // When passed both chambers
+        VETOED_DATE: 'Vetoed Date',                     // When vetoed, if applicable
+        ENACTED_DATE: 'Enacted Date',                   // When enacted, if applicable
+        ACTION_TYPE: 'Action Type'                      // Type of legislative action
     },
 
-    // Export table field mapping
+    // Maps field names in the Website Exports table
     EXPORT_FIELDS: {
-        EXPORT_DATE: 'Export Date',
-        EXPORT_BATCH: 'Batch ID',
-        BILL_RECORD: 'Bill Record',
-        EXPORTED_BY: 'Exported By'
+        EXPORT_DATE: 'Export Date',                     // When the export was generated
+        EXPORT_BATCH: 'Batch ID',                       // Unique identifier for the export batch
+        BILL_RECORD: 'Bill Record',                     // Link back to original bill
+        EXPORTED_BY: 'Exported By'                      // Source of the export (automation)
     }
 };
 
-// Transform a single record for website export
+/**
+ * Transforms a bill record into the website export format
+ * @param {Object} record - An Airtable record object from the Bills table
+ * @returns {Object|null} - Website-compatible record or null if transformation failed
+ */
 async function transformRecord(record) {
-
     try {
-        // Extract essential bill information
+        // Extract core bill information (handle potential null/undefined values)
         const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
         const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
         const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
         const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
-        // Format dates properly for export
+        
+        /**
+         * Standardizes date values to consistent format
+         * Handles multiple input formats: Date objects, strings, or null
+         * @param {Date|string|null} dateValue - The date value to format
+         * @returns {string|null} - Formatted date string or null
+         */
         const formatDate = (dateValue) => {
-            if (!dateValue) return null;
+            if (!dateValue) {
+              return null;
+            }
             
             // If it's already a string, return it as is
-            if (typeof dateValue === 'string') return dateValue;
+            if (typeof dateValue === 'string') {
+              return dateValue;
+            }
             
             // If it's a Date object, format it as YYYY-MM-DD
             if (dateValue instanceof Date) {
@@ -53,41 +71,42 @@ async function transformRecord(record) {
             return String(dateValue);
         };
         
-        // Extract date fields directly from the table
+        // Extract and format date fields
         const lastActionDate = formatDate(record.getCellValue(CONFIG.FIELDS.LAST_ACTION));
         const introducedDate = formatDate(record.getCellValue(CONFIG.FIELDS.INTRODUCED_DATE));
+        const passedLegislatureDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED_LEGISLATURE_DATE));
         const passed1ChamberDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED1_CHAMBER_DATE));
         const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
         const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
 
-        // Get intent values (Protective, Neutral, Restrictive)
+        // Process intent flags (Protective/Neutral/Restrictive) from multiple select field
         const intent = record.getCellValue(CONFIG.FIELDS.INTENT) || [];
+        // Convert to array of names regardless of input format
         const intentArray = Array.isArray(intent) ? intent.map(i => i.name) : [];
         
-        // Check for Ballot Initiative based on Action Type field
+        // Determine if bill is a ballot initiative or court case from Action Type field
         const actionType = record.getCellValue(CONFIG.FIELDS.ACTION_TYPE) || [];
+        // Handle action type whether it's an array, string, or empty
         const actionTypeArray = Array.isArray(actionType) 
             ? actionType.map(i => i.name) 
             : typeof actionType === 'string' 
                 ? actionType.split(',').map(i => i.trim()) 
                 : [];
         
+        // Set as "1" for true or "0" for false (website format requirement)
         const ballotInitiative = actionTypeArray.includes('Ballot Initiative') ? '1' : '0';
-        
-        // Court Case handling - assuming it's a similar field
-        // Adjust this logic based on your actual data structure
         const courtCase = actionTypeArray.includes('Court Case') ? '1' : '0';
 
-        // Extract subpolicies - ONLY from specific policies (access)
+        // Get subpolicies from the access field using helper function
         const specificPoliciesAccess = getSpecificPolicies(record.getCellValue(CONFIG.FIELDS.SPECIFIC_POLICIES_ACCESS)) || [];
         
-        // Create an array of exactly 10 subpolicies (padding with empty strings if needed)
+        // Website requires exactly 10 subpolicy fields (pad with empty strings if needed)
         const subpolicies = specificPoliciesAccess.slice(0, 10);
         while (subpolicies.length < 10) {
             subpolicies.push('');
         }
 
-        // Construct export record according to the website team's requirements
+        // Return the transformed record in the format expected by the website
         return {
             State: state,
             BillType: billType,
@@ -108,9 +127,10 @@ async function transformRecord(record) {
             "Last Action Date": lastActionDate,
             IntroducedDate: introducedDate,
             Passed1ChamberDate: passed1ChamberDate,
-            PassedLegislature: passed1ChamberDate, // Using the same field for now - adjust if needed
+            PassedLegislature: passedLegislatureDate, 
             VetoedDate: vetoedDate,
             EnactedDate: enactedDate,
+            // Map intent values to website's 1/0 flag format
             Positive: intentArray.includes('Protective') ? '1' : '0',
             Neutral: intentArray.includes('Neutral') ? '1' : '0',
             Restrictive: intentArray.includes('Restrictive') ? '1' : '0'
@@ -120,16 +140,22 @@ async function transformRecord(record) {
     }
 }
 
-// Helper function to extract specific policies from various fields
+/**
+ * Extracts specific policy values from policy field, handling multiple formats
+ * @param {Array|string|null} policyField - The policy field value
+ * @returns {Array} - Array of policy names
+ */
 function getSpecificPolicies(policyField) {
-    if (!policyField) return [];
+    if (!policyField) {
+      return [];
+    }
     
-    // Handle if it's an array of select options
+    // Handle if it's an array of select options (common in Airtable)
     if (Array.isArray(policyField)) {
         return policyField.map(p => p.name || p);
     }
     
-    // Handle if it's a string
+    // Handle if it's a comma-separated string
     if (typeof policyField === 'string') {
         return policyField.split(',').map(p => p.trim()).filter(p => p);
     }
@@ -137,7 +163,11 @@ function getSpecificPolicies(policyField) {
     return [];
 }
 
-// Generate a unique batch ID for this export
+/**
+ * Generates a unique timestamp-based batch ID for tracking exports
+ * Format: WEB_YYYYMMDD_HHMM
+ * @returns {string} - Unique batch identifier
+ */
 function generateBatchId() {
     const date = new Date();
     return `WEB_${date.getFullYear()}${
@@ -147,22 +177,28 @@ function generateBatchId() {
     }${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
-// Generate a summary of the export process
+/**
+ * Creates a detailed summary report of the export process
+ * @param {Array} records - Successfully exported records
+ * @param {Array} errors - Error objects with bill and error message
+ * @param {string} batchId - The batch identifier
+ * @returns {string} - Formatted markdown summary
+ */
 function generateSummary(records, errors, batchId) {
     const summary = [`**Website Export Summary**\n\n`];
     
-    // Batch information
+    // Batch information section
     summary.push(`📦 **Export Batch**`);
     summary.push(`- Batch ID: ${batchId}`);
     summary.push(`- Export Date: ${new Date().toLocaleString()}\n`);
     
-    // Record statistics
+    // Record count statistics
     summary.push(`📊 **Statistics**`);
     summary.push(`- Total records processed: ${records.length + errors.length}`);
     summary.push(`- Successfully exported: ${records.length}`);
     summary.push(`- Errors encountered: ${errors.length}\n`);
 
-    // Category breakdown by intent
+    // Intent breakdown statistics (Positive/Neutral/Restrictive)
     if (records.length > 0) {
         const intentStats = {
             Positive: 0,
@@ -170,15 +206,23 @@ function generateSummary(records, errors, batchId) {
             Restrictive: 0
         };
 
+        // Count records by intent flag
         records.forEach(record => {
-            if (record.fields.Positive === '1') intentStats.Positive++;
-            if (record.fields.Neutral === '1') intentStats.Neutral++;
-            if (record.fields.Restrictive === '1') intentStats.Restrictive++;
+            if (record.fields.Positive === '1') {
+              intentStats.Positive++;
+            }
+            if (record.fields.Neutral === '1') {
+              intentStats.Neutral++;
+            }
+            if (record.fields.Restrictive === '1') {
+              intentStats.Restrictive++;
+            }
         });
 
+        // Add intent breakdown to summary
         summary.push(`📑 **Intent Breakdown**`);
         Object.entries(intentStats)
-            .sort(([, a], [, b]) => b - a)
+            .sort(([, a], [, b]) => b - a) // Sort by count descending
             .forEach(([intent, count]) => {
                 if (count > 0) {
                     summary.push(`- ${intent}: ${count}`);
@@ -187,7 +231,7 @@ function generateSummary(records, errors, batchId) {
         summary.push('');
     }
 
-    // State breakdown
+    // State breakdown statistics (counts by state)
     if (records.length > 0) {
         const stateStats = {};
         records.forEach(record => {
@@ -198,7 +242,7 @@ function generateSummary(records, errors, batchId) {
         if (Object.keys(stateStats).length > 0) {
             summary.push(`🌎 **State Breakdown**`);
             Object.entries(stateStats)
-                .sort(([, a], [, b]) => b - a)
+                .sort(([, a], [, b]) => b - a) // Sort by count descending
                 .forEach(([state, count]) => {
                     summary.push(`- ${state}: ${count}`);
                 });
@@ -206,7 +250,7 @@ function generateSummary(records, errors, batchId) {
         }
     }
 
-    // Errors
+    // Error details section
     if (errors.length > 0) {
         summary.push(`⚠️ **Errors**`);
         errors.forEach(({bill, error}) => {
@@ -214,47 +258,59 @@ function generateSummary(records, errors, batchId) {
         });
     }
 
+    // Join all parts with newlines
     return summary.join('\n');
 }
 
-// Update bills with export information
+/**
+ * Updates bills with export information
+ * @param {Object} billsTable - Airtable table object
+ * @param {Array} exportedBillIds - Array of exported bill IDs
+ * @param {string} batchId - The batch identifier
+ * @returns {number} - Count of exported bills
+ */
 async function updateExportedBills(billsTable, exportedBillIds, batchId) {
-    // Since 'Exported to Website Date' is a computed field, we don't need to update it directly
-    // We could potentially log the exports separately if needed
-    
-    return exportedBillIds.length; // Just return the count of exported bills
+    // Currently just returns count, as export date is handled by computed fields
+    // Could be expanded to update additional fields if needed
+    return exportedBillIds.length;
 }
 
-// Main export function
+/**
+ * Main function to generate website export records
+ * Processes all bills, transforms them to website format, and creates export records
+ */
 async function generateWebsiteExport() {
     output.markdown(`**Starting Website Export Generation**`);
     
-    // Get tables
+    // Get references to the required tables
     const billsTable = base.getTable('Bills');
     const exportTable = base.getTable('Website Exports');
     
-    // Generate batch ID
+    // Generate a unique batch identifier for this export
     const batchId = generateBatchId();
     
-   // Get all records without filtering
+    // Retrieve all bill records without filtering (changed from previous version)
     const records = await billsTable.selectRecordsAsync();
 
-    const exportRecords = [];
-    const errors = [];
-    const exportedBillIds = [];
+    // Initialize tracking arrays
+    const exportRecords = [];  // Successfully processed records
+    const errors = [];         // Error tracking
+    const exportedBillIds = []; // IDs of exported bills
 
-    // Process each bill
+    // Process each bill one by one
     for (const record of records.records) {
         try {
             const webRecord = await transformRecord(record);
             if (webRecord) {
-                // Create export history record
+                // Prepare record for the export table
                 const exportRecord = {
                     fields: {
+                        // Export metadata
                         [CONFIG.EXPORT_FIELDS.EXPORT_DATE]: new Date().toISOString(),
                         [CONFIG.EXPORT_FIELDS.EXPORT_BATCH]: batchId,
-                        [CONFIG.EXPORT_FIELDS.BILL_RECORD]: [{id: record.id}],
+                        [CONFIG.EXPORT_FIELDS.BILL_RECORD]: [{id: record.id}], // Link to original bill
                         [CONFIG.EXPORT_FIELDS.EXPORTED_BY]: 'Automation',
+                        // Transformed bill data
                         ...webRecord
                     }
                 };
@@ -263,6 +319,7 @@ async function generateWebsiteExport() {
                 exportedBillIds.push(record.id);
             }
         } catch (error) {
+            // Track errors with bill ID for reporting
             errors.push({
                 bill: record.getCellValue(CONFIG.FIELDS.BILL_ID),
                 error: error.message
@@ -270,27 +327,26 @@ async function generateWebsiteExport() {
         }
     }
 
-    // Create export records in batches
+    // Create export records if any were successfully processed
     if (exportRecords.length > 0) {
         try {
-            // Create export records
+            // Process in batches of 50 due to Airtable API limits
             for (let i = 0; i < exportRecords.length; i += 50) {
                 const batch = exportRecords.slice(i, i + 50);
                 await exportTable.createRecordsAsync(batch);
                 output.markdown(`Created ${batch.length} export records`);
             }
             
-            // No longer trying to update 'Exported to Website Date' since it's computed
             output.markdown(`Successfully exported ${exportedBillIds.length} bills`);
         } catch (error) {
             output.markdown(`⚠️ **Error creating export records:** ${error.message}`);
         }
     }
 
-    // Generate and output summary
+    // Generate and display the summary report
     const summary = generateSummary(exportRecords, errors, batchId);
     output.markdown(summary);
 }
 
-// Run the export
+// Execute the export process
 await generateWebsiteExport();
