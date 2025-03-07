@@ -8,7 +8,7 @@ const CONFIG = {
         BILL_TYPE: 'BillType',
         BILL_NUMBER: 'BillNumber',
         LAST_ACTION: 'Last Action',
-        INTENT: 'Intent',
+        INTENT: 'Intent (access)',
         SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
         WEBSITE_BLURB: 'Website Blurb',
         READY_FOR_WEBSITE: 'Ready for Website',
@@ -30,8 +30,6 @@ const CONFIG = {
 
 // Transform a single record for website export
 async function transformRecord(record) {
-    // Validate record is ready for website
-    if (!record.getCellValue(CONFIG.FIELDS.READY_FOR_WEBSITE)) return null;
 
     try {
         // Extract essential bill information
@@ -62,7 +60,7 @@ async function transformRecord(record) {
         const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
         const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
 
-        // Get intent values (Positive, Neutral, Restrictive)
+        // Get intent values (Protective, Neutral, Restrictive)
         const intent = record.getCellValue(CONFIG.FIELDS.INTENT) || [];
         const intentArray = Array.isArray(intent) ? intent.map(i => i.name) : [];
         
@@ -87,19 +85,6 @@ async function transformRecord(record) {
         const subpolicies = specificPoliciesAccess.slice(0, 10);
         while (subpolicies.length < 10) {
             subpolicies.push('');
-        }
-
-        // Validate required fields
-        const missingFields = [];
-        ['STATE', 'BILL_TYPE', 'BILL_NUMBER', 'WEBSITE_BLURB']
-            .forEach(field => {
-                if (!record.getCellValue(CONFIG.FIELDS[field])) {
-                    missingFields.push(field);
-                }
-            });
-        
-        if (missingFields.length > 0) {
-            throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
         }
 
         // Construct export record according to the website team's requirements
@@ -245,16 +230,14 @@ async function generateWebsiteExport() {
     output.markdown(`**Starting Website Export Generation**`);
     
     // Get tables
-    const billsTable = base.getTable('Bills');
+    const billsTable = base.getTable('Bills March 2025');
     const exportTable = base.getTable('Website Exports');
     
     // Generate batch ID
     const batchId = generateBatchId();
     
-    // Get records ready for website
-    const records = await billsTable.selectRecordsAsync({
-        filterByFormula: "AND({Ready for Website} = TRUE(), NOT({Website Blurb} = ''))"
-    });
+   // Get all records without filtering
+    const records = await billsTable.selectRecordsAsync();
 
     const exportRecords = [];
     const errors = [];
