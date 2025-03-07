@@ -230,7 +230,7 @@ async function generateWebsiteExport() {
     output.markdown(`**Starting Website Export Generation**`);
     
     // Get tables
-    const billsTable = base.getTable('Bills March 2025');
+    const billsTable = base.getTable('Bills');
     const exportTable = base.getTable('Website Exports');
     
     // Generate batch ID
