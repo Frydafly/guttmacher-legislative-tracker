@@ -18,6 +18,7 @@ const CONFIG = {
         READY_FOR_WEBSITE: 'Ready for Website',         // Flag to indicate web-ready
         INTRODUCED_DATE: 'Introduction Date',           // When bill was introduced
         PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',  // When passed first chamber
+        PASSED2_CHAMBER_DATE: 'Passed 2 Chamber Date',  // When passed second chamber (added as required)
         PASSED_LEGISLATURE_DATE: 'Passed Legislature Date', // When passed both chambers
         VETOED_DATE: 'Vetoed Date',                     // When vetoed, if applicable
         ENACTED_DATE: 'Enacted Date',                   // When enacted, if applicable
@@ -47,7 +48,7 @@ async function transformRecord(record) {
         const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
         
         /**
-         * Standardizes date values to consistent format
+         * Standardizes date values to YYYY-MM-DD format
          * Handles multiple input formats: Date objects, strings, or null
          * @param {Date|string|null} dateValue - The date value to format
          * @returns {string|null} - Formatted date string or null
@@ -57,25 +58,37 @@ async function transformRecord(record) {
               return null;
             }
             
-            // If it's already a string, return it as is
-            if (typeof dateValue === 'string') {
-              return dateValue;
-            }
-            
             // If it's a Date object, format it as YYYY-MM-DD
             if (dateValue instanceof Date) {
-                return dateValue.toISOString().split('T')[0];
+                const year = dateValue.getFullYear();
+                const month = String(dateValue.getMonth() + 1).padStart(2, '0');
+                const day = String(dateValue.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            
+            // If it's a string that looks like a date, try to convert to YYYY-MM-DD
+            if (typeof dateValue === 'string') {
+                // Try to parse the date string
+                const parsedDate = new Date(dateValue);
+                if (!isNaN(parsedDate.getTime())) {
+                    const year = parsedDate.getFullYear();
+                    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                    const day = String(parsedDate.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                return dateValue; // Return original if parsing fails
             }
             
             // If it's another format, try to convert to string
             return String(dateValue);
         };
         
-        // Extract and format date fields
+        // Extract and format date fields to YYYY-MM-DD
         const lastActionDate = formatDate(record.getCellValue(CONFIG.FIELDS.LAST_ACTION));
         const introducedDate = formatDate(record.getCellValue(CONFIG.FIELDS.INTRODUCED_DATE));
-        const passedLegislatureDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED_LEGISLATURE_DATE));
         const passed1ChamberDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED1_CHAMBER_DATE));
+        const passed2ChamberDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED2_CHAMBER_DATE));
+        const passedLegislatureDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED_LEGISLATURE_DATE));
         const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
         const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
 
@@ -113,20 +126,22 @@ async function transformRecord(record) {
             BillNumber: billNumber,
             "Ballot Initiative": ballotInitiative,
             "Court Case": courtCase,
-            SubPolicy1: subpolicies[0],
-            SubPolicy2: subpolicies[1],
-            SubPolicy3: subpolicies[2],
-            SubPolicy4: subpolicies[3],
-            SubPolicy5: subpolicies[4],
-            SubPolicy6: subpolicies[5],
-            SubPolicy7: subpolicies[6],
-            SubPolicy8: subpolicies[7],
-            SubPolicy9: subpolicies[8],
-            SubPolicy10: subpolicies[9],
+            // Changed SubPolicy to Subpolicy as requested
+            Subpolicy1: subpolicies[0],
+            Subpolicy2: subpolicies[1],
+            Subpolicy3: subpolicies[2],
+            Subpolicy4: subpolicies[3],
+            Subpolicy5: subpolicies[4],
+            Subpolicy6: subpolicies[5],
+            Subpolicy7: subpolicies[6],
+            Subpolicy8: subpolicies[7],
+            Subpolicy9: subpolicies[8],
+            Subpolicy10: subpolicies[9],
             WebsiteBlurb: websiteBlurb,
             "Last Action Date": lastActionDate,
             IntroducedDate: introducedDate,
             Passed1ChamberDate: passed1ChamberDate,
+            "Passed 2 Chamber": passed2ChamberDate, // Added back as requested
             PassedLegislature: passedLegislatureDate, 
             VetoedDate: vetoedDate,
             EnactedDate: enactedDate,
@@ -150,14 +165,27 @@ function getSpecificPolicies(policyField) {
       return [];
     }
     
+    // Helper function to clean policy strings (remove newlines and trim)
+    const cleanPolicyString = (str) => {
+        if (typeof str !== 'string') return str;
+        // Replace any newlines with a space and trim extra spaces
+        return str.replace(/[\r\n]+/g, ' ').trim();
+    };
+    
     // Handle if it's an array of select options (common in Airtable)
     if (Array.isArray(policyField)) {
-        return policyField.map(p => p.name || p);
+        return policyField.map(p => {
+            const name = p.name || p;
+            return cleanPolicyString(name);
+        });
     }
     
     // Handle if it's a comma-separated string
     if (typeof policyField === 'string') {
-        return policyField.split(',').map(p => p.trim()).filter(p => p);
+        return policyField
+            .split(',')
+            .map(p => cleanPolicyString(p))
+            .filter(p => p);
     }
     
     return [];
@@ -289,8 +317,10 @@ async function generateWebsiteExport() {
     // Generate a unique batch identifier for this export
     const batchId = generateBatchId();
     
-    // Retrieve all bill records without filtering (changed from previous version)
-    const records = await billsTable.selectRecordsAsync();
+    // Retrieve bills that are ready for the website
+    const records = await billsTable.selectRecordsAsync({
+        filterByFormula: "AND({Ready for Website} = TRUE(), NOT({Website Blurb} = ''))"
+    });
 
     // Initialize tracking arrays
     const exportRecords = [];  // Successfully processed records

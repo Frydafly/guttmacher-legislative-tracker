@@ -52,7 +52,8 @@ The script maps the following fields:
 ### Content
 
 - WebsiteBlurb
-- SubPolicy1-10 (from Specific Policies (access))
+- Subpolicy1-10 (from Specific Policies (access))
+- Passed 2 Chamber
 
 ### Dates
 
@@ -181,6 +182,7 @@ The Website Exports table requires these fields:
 | Last Action Date | Most recent date | Date |
 | IntroducedDate | Introduction date | Date |
 | Passed1ChamberDate | First chamber passage | Date |
+| Passed 2 Chamber | Second chamber passage flag | Text |
 | PassedLegislature | Legislature passage | Date |
 | VetoedDate | Veto date | Date |
 | EnactedDate | Enactment date | Date |
