@@ -2,44 +2,44 @@
 
 ## 📝 Overview
 
-This Airtable script automates the export of legislative bill data from the Policy Tracker to a format compatible with the external website display. It transforms bill records into a consistent format that matches the website's expected structure.
+This Airtable script automates the export of legislative bill data from the Policy Tracker to a format compatible with the external website display. It performs a complete refresh of the export table each time it runs, ensuring the website always has the most current data.
 
 ## 🌟 Key Features
 
-- Automated export of all bills from the tracking database
+- Complete refresh of export data (deletes old records before creating new ones)
 - Proper formatting of dates and policy fields
-- Extraction of subpolicies from the access database
+- Extraction of subpolicies from legislative data
 - Mapping of intent tags (Protective, Neutral, Restrictive)
-- Comprehensive export logging with statistics
+- Conversion of legislative dates to boolean flags when needed
+- Comprehensive export statistics
 - Detailed error reporting
-- Batch processing to handle large datasets
 
 ## 🔧 Prerequisites
 
 - Airtable base with two tables:
   1. "Bills" table - containing tracked legislation
-  2. "Website Exports" table - storing export history
+  2. "Website Exports" table - destination for formatted export data
 
 ## 🚀 How to Use
 
-1. **Set Up Your Airtable Base**:
-   - Ensure field names match those in the CONFIG object
-   - Make sure "Website Exports" table exists with required fields
-   - Add "Intent (access)" and "Specific Policies (access)" fields to track policy types
+1. **Prepare Bills for Export**:
+   - Complete the "Website Blurb" field with the public-facing description
+   - Check the "Ready for Website" checkbox
+   - Ensure all policy fields are properly categorized
 
 2. **Run the Script**:
    - Navigate to the Automations or Scripts panel
-   - Add this script as a new automation
-   - Review the export summary after execution
+   - Run the "Website Export" script
+   - The script will clear the export table and populate it with fresh data
 
-3. **Review Exports**:
-   - The script creates new records in the Website Exports table
-   - Each export includes a unique batch ID for tracking
-   - Export metadata and statistics are displayed in the console
+3. **Download Export Data**:
+   - After the script completes, navigate to the Website Exports table
+   - Download as CSV
+   - Provide to the website team
 
 ## 🔍 What Gets Exported
 
-The script maps the following fields:
+The script transforms and exports the following fields:
 
 ### Core Bill Information
 
@@ -52,30 +52,30 @@ The script maps the following fields:
 ### Content
 
 - WebsiteBlurb
-- Subpolicy1-10 (from Specific Policies (access))
-- Passed 2 Chamber
+- Subpolicy1-10 (from Specific Policies)
 
-### Dates
+### Status and Dates
 
 - Last Action Date
 - IntroducedDate
 - Passed1ChamberDate
+- Passed 2 Chamber (Boolean: 1/0 based on PassedLegislature date)
+- PassedLegislature
 - VetoedDate
 - EnactedDate
 
 ### Intent Tags
 
-- Positive (if Intent includes "Protective")
-- Neutral (if Intent includes "Neutral")
-- Restrictive (if Intent includes "Restrictive")
+- Positive (1/0 if Intent includes "Protective")
+- Neutral (1/0 if Intent includes "Neutral")
+- Restrictive (1/0 if Intent includes "Restrictive")
 
 ## ⚙️ Configuration
 
-The script uses a CONFIG object to map fields between the Bills table and the export format:
+The script uses a CONFIG object to map fields. If your field names differ, update this section:
 
 ```javascript
 const CONFIG = {
-    // Maps field names from the Bills table
     FIELDS: {
         BILL_ID: 'BillID',
         STATE: 'State',
@@ -88,17 +88,10 @@ const CONFIG = {
         READY_FOR_WEBSITE: 'Ready for Website',
         INTRODUCED_DATE: 'Introduction Date',
         PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
+        PASSED_LEGISLATURE_DATE: 'Passed Legislature Date',
         VETOED_DATE: 'Vetoed Date',
         ENACTED_DATE: 'Enacted Date',
         ACTION_TYPE: 'Action Type'
-    },
-
-    // Maps fields in the export table
-    EXPORT_FIELDS: {
-        EXPORT_DATE: 'Export Date',
-        EXPORT_BATCH: 'Batch ID',
-        BILL_RECORD: 'Bill Record',
-        EXPORTED_BY: 'Exported By'
     }
 };
 ```
@@ -107,19 +100,14 @@ const CONFIG = {
 
 Each export generates a detailed report including:
 
-- Batch details and timestamp
-- Number of successfully exported bills
+- Export statistics (processed, successful, errors)
 - Intent breakdown (Positive/Neutral/Restrictive)
 - State breakdown
 - Any errors encountered
 
 Example summary:
-```
 
-📦 Export Batch
-- Batch ID: WEB_20240307_1530
-- Export Date: 3/7/2025, 3:30:00 PM
-
+```plaintext
 📊 Statistics
 - Total records processed: 125
 - Successfully exported: 123
@@ -141,56 +129,61 @@ Example summary:
 
 ### Common Issues
 
-1. **Transformation Errors**:
-   - The script will log specific field errors
-   - Check field data types match what the script expects
-   - Confirm field names match the CONFIG object
+1. **Field Not Found Errors**:
+   - Ensure all field names in CONFIG match exactly what's in your Airtable
+   - Check for typos in field names
+   - Verify that all required fields exist in your tables
 
-2. **Date Formatting Issues**:
+2. **No Records Being Exported**:
+   - Confirm bills have the "Ready for Website" checkbox checked
+   - Verify "Website Blurb" fields are filled out
+   - Check filter conditions if customized
+
+3. **Date Formatting Issues**:
    - The script attempts to normalize various date formats
    - Check for malformed dates in your source data
 
-3. **Batch Processing Limits**:
-   - The script processes records in batches of 50
-   - For very large databases, the process may take some time
+4. **Error with Batch Processing**:
+   - The script processes records in batches of 50 (Airtable limit)
+   - For large exports, watch for timeout errors
 
-4. **Empty Exports**:
-   - The script will continue even if no records are successfully transformed
-   - Check for basic data integrity issues if no records export
+### Field Requirements
 
-### Field Naming
+These fields must be properly set up in your Bills table:
 
-If you rename fields in your Airtable base, you must update the corresponding mappings in the CONFIG object to match exactly.
+- State (Single select)
+- BillType (Single select)
+- BillNumber (Text)
+- Website Blurb (Long text)
+- Ready for Website (Checkbox)
+- Date fields (various)
+- Intent fields (Multiple select)
 
 ## 📋 Export Table Structure
 
-The Website Exports table requires these fields:
+The Website Exports table should have these fields:
 
 | Field Name | Description | Type |
 |------------|-------------|------|
-| Batch ID | Unique export identifier | Text |
-| Export Date | Timestamp of export | Date/Time |
-| Bill Record | Link to source bill | Linked Record |
-| Exported By | Source of export | Text |
 | State | State abbreviation | Text |
 | BillType | Type of bill | Text |
 | BillNumber | Specific bill number | Text |
-| Ballot Initiative | Flag for ballot initiatives | Text |
-| Court Case | Flag for court cases | Text |
-| SubPolicy1-10 | Individual policy components | Text |
+| Ballot Initiative | Flag for ballot initiatives (1/0) | Text |
+| Court Case | Flag for court cases (1/0) | Text |
+| Subpolicy1-10 | Individual policy components | Text |
 | WebsiteBlurb | Website-ready description | Long Text |
-| Last Action Date | Most recent date | Date |
-| IntroducedDate | Introduction date | Date |
-| Passed1ChamberDate | First chamber passage | Date |
-| Passed 2 Chamber | Second chamber passage flag | Text |
-| PassedLegislature | Legislature passage | Date |
-| VetoedDate | Veto date | Date |
-| EnactedDate | Enactment date | Date |
-| Positive | Protective intent flag | Text |
-| Neutral | Neutral intent flag | Text |
-| Restrictive | Restrictive intent flag | Text |
+| Last Action Date | Most recent date | Date/Text |
+| IntroducedDate | Introduction date | Date/Text |
+| Passed1ChamberDate | First chamber passage | Date/Text |
+| Passed 2 Chamber | Second chamber passage flag (1/0) | Text |
+| PassedLegislature | Legislature passage | Date/Text |
+| VetoedDate | Veto date | Date/Text |
+| EnactedDate | Enactment date | Date/Text |
+| Positive | Protective intent flag (1/0) | Text |
+| Neutral | Neutral intent flag (1/0) | Text |
+| Restrictive | Restrictive intent flag (1/0) | Text |
 
-## 🔄 Update Process
+## 🔄 Website Update Process
 
 The full website update process involves:
 
@@ -198,3 +191,5 @@ The full website update process involves:
 2. Downloading the CSV from the Website Exports table
 3. Providing the CSV to the website team
 4. Website team uploads and processes the data
+
+Typically, this process happens bi-monthly (1st and 15th of each month).
