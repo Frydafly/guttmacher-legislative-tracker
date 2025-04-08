@@ -1,5 +1,5 @@
 // Guttmacher Policy Tracker: Website Export Script
-// Purpose: Creates a clean export of all website-ready bills
+// Purpose: Creates a clean export of ALL bills
 
 // Configuration object for field mapping
 const CONFIG = {
@@ -13,7 +13,6 @@ const CONFIG = {
         INTENT: 'Intent (access)',
         SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
         WEBSITE_BLURB: 'Website Blurb',
-        READY_FOR_WEBSITE: 'Ready for Website',
         INTRODUCED_DATE: 'Introduction Date',
         PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
         PASSED_LEGISLATURE_DATE: 'Passed Legislature Date',
@@ -32,7 +31,7 @@ async function transformRecord(record) {
         const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
         const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
         const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
-        const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
+        const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB) || '';
         
         // Format date function
         const formatDate = (dateValue) => {
@@ -66,6 +65,11 @@ async function transformRecord(record) {
         const passedLegislatureDate = formatDate(record.getCellValue(CONFIG.FIELDS.PASSED_LEGISLATURE_DATE));
         const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
         const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
+
+        // Derive boolean status from date fields
+        const vetoedStatus = vetoedDate ? '1' : '0';
+        const enactedStatus = enactedDate ? '1' : '0';
+        const passed2ChamberStatus = passedLegislatureDate ? '1' : '0';
 
         // Process intent flags
         const intent = record.getCellValue(CONFIG.FIELDS.INTENT) || [];
@@ -112,10 +116,12 @@ async function transformRecord(record) {
             "Last Action Date": lastActionDate,
             IntroducedDate: introducedDate,
             Passed1ChamberDate: passed1ChamberDate,
-            "Passed 2 Chamber": passedLegislatureDate ? '1' : '0',
+            "Passed 2 Chamber": passed2ChamberStatus,
             PassedLegislature: passedLegislatureDate, 
             VetoedDate: vetoedDate,
+            Vetoed: vetoedStatus,
             EnactedDate: enactedDate,
+            Enacted: enactedStatus,
             Positive: intentArray.includes('Protective') ? '1' : '0',
             Neutral: intentArray.includes('Neutral') ? '1' : '0',
             Restrictive: intentArray.includes('Restrictive') ? '1' : '0'
@@ -129,10 +135,14 @@ async function transformRecord(record) {
  * Extracts specific policy values from policy field
  */
 function getSpecificPolicies(policyField) {
-    if (!policyField) return [];
+    if (!policyField) {
+      return [];
+    }
     
     const cleanPolicyString = (str) => {
-        if (typeof str !== 'string') return str;
+        if (typeof str !== 'string') {
+          return str;
+        }
         return str.replace(/[\r\n]+/g, ' ').trim();
     };
     
@@ -174,9 +184,15 @@ function generateSummary(records, errors) {
         };
 
         records.forEach(record => {
-            if (record.fields.Positive === '1') intentStats.Positive++;
-            if (record.fields.Neutral === '1') intentStats.Neutral++;
-            if (record.fields.Restrictive === '1') intentStats.Restrictive++;
+            if (record.fields.Positive === '1') {
+              intentStats.Positive++;
+            }
+            if (record.fields.Neutral === '1') {
+              intentStats.Neutral++;
+            }
+            if (record.fields.Restrictive === '1') {
+              intentStats.Restrictive++;
+            }
         });
 
         summary.push(`📑 **Intent Breakdown**`);
@@ -254,17 +270,15 @@ async function generateWebsiteExport() {
         // Continue with export even if delete fails
     }
     
-    // 2. GET WEBSITE-READY BILLS
-    const records = await billsTable.selectRecordsAsync({
-        filterByFormula: "AND({Ready for Website} = TRUE(), NOT({Website Blurb} = ''))"
-    });
+    // 2. GET ALL BILLS (NO FILTER)
+    const records = await billsTable.selectRecordsAsync();
 
     // Initialize tracking arrays
     const exportRecords = [];  // Successfully processed records
     const errors = [];         // Error tracking
 
     // 3. PROCESS EACH BILL
-    output.markdown(`Processing ${records.records.length} website-ready bills...`);
+    output.markdown(`Processing ${records.records.length} bills...`);
     
     for (const record of records.records) {
         try {
