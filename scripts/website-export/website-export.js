@@ -19,7 +19,25 @@ const CONFIG = {
         VETOED_DATE: 'Vetoed Date',
         ENACTED_DATE: 'Enacted Date',
         ACTION_TYPE: 'Action Type'
-    }
+    },
+    
+    // Subpolicies that are no longer supported by the website team
+    UNSUPPORTED_SUBPOLICIES: [
+        "AB Misc Neutral",
+        "AB Ban Partial-Birth Abortion",
+        "CPC Misc Restrictive",
+        "FP Funding Restricted Other",
+        "FP Right to Contraception",
+        "INS Misc Positive",
+        "Pregnancy HIV Test for Preg Women",
+        "Parental Leave",
+        "Repeals Ban All or Most AB Ban",
+        "Repeals Counsel Perinatal Hospice Info",
+        "Sex Ed Misc Neutral",
+        "Sex Ed Misc Positive",
+        "Sex Ed Misc Restrictive",
+        "STI Misc Positive"
+    ]
 };
 
 /**
@@ -31,9 +49,16 @@ async function transformRecord(record) {
         const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
         const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
         const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
-        const websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB) || '';
         
-        // Format date function
+        // Sanitize website blurb to remove problematic newlines and other characters
+        // that might interfere with CSV import
+        let websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB) || '';
+        // Replace all newlines, carriage returns, and tabs with spaces
+        websiteBlurb = websiteBlurb.replace(/[\r\n\t]+/g, ' ');
+        // Normalize multiple spaces to single spaces
+        websiteBlurb = websiteBlurb.replace(/\s+/g, ' ').trim();
+        
+        // Format date function to ensure YYYY-MM-DD format
         const formatDate = (dateValue) => {
             if (!dateValue) return null;
             
@@ -66,7 +91,7 @@ async function transformRecord(record) {
         const vetoedDate = formatDate(record.getCellValue(CONFIG.FIELDS.VETOED_DATE));
         const enactedDate = formatDate(record.getCellValue(CONFIG.FIELDS.ENACTED_DATE));
 
-        // Derive boolean status from date fields
+        // Derive boolean status from date fields - ensure they're "0" or "1" strings
         const vetoedStatus = vetoedDate ? '1' : '0';
         const enactedStatus = enactedDate ? '1' : '0';
         const passed2ChamberStatus = passedLegislatureDate ? '1' : '0';
@@ -86,16 +111,22 @@ async function transformRecord(record) {
         const ballotInitiative = actionTypeArray.includes('Ballot Initiative') ? '1' : '0';
         const courtCase = actionTypeArray.includes('Court Case') ? '1' : '0';
 
-        // Get subpolicies
-        const specificPoliciesAccess = getSpecificPolicies(record.getCellValue(CONFIG.FIELDS.SPECIFIC_POLICIES_ACCESS)) || [];
+        // Get subpolicies with proper sanitization and filter out unsupported ones
+        const specificPoliciesResult = getSpecificPolicies(record.getCellValue(CONFIG.FIELDS.SPECIFIC_POLICIES_ACCESS));
         
-        // Website requires exactly 10 subpolicy fields
-        const subpolicies = specificPoliciesAccess.slice(0, 10);
+        // Track unsupported subpolicies for reporting
+        if (specificPoliciesResult.unsupportedFound && specificPoliciesResult.unsupportedFound.length > 0) {
+            // Store for later reporting
+            record.unsupportedSubpolicies = specificPoliciesResult.unsupportedFound;
+        }
+        
+        // Create an array of exactly 10 subpolicies (padding with empty strings if needed)
+        const subpolicies = specificPoliciesResult.policies.slice(0, 10);
         while (subpolicies.length < 10) {
             subpolicies.push('');
         }
 
-        // Return the transformed record
+        // Return the transformed record - ensure field names match exactly what's expected
         return {
             State: state,
             BillType: billType,
@@ -132,35 +163,71 @@ async function transformRecord(record) {
 }
 
 /**
- * Extracts specific policy values from policy field
+ * Extracts specific policy values from policy field with proper sanitization
+ * and filters out unsupported subpolicies
  */
 function getSpecificPolicies(policyField) {
     if (!policyField) {
-      return [];
+      return { policies: [], unsupportedFound: [] };
     }
     
     const cleanPolicyString = (str) => {
         if (typeof str !== 'string') {
           return str;
         }
-        return str.replace(/[\r\n]+/g, ' ').trim();
+        // Remove any newlines, tabs, or multiple spaces
+        return str.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
     };
     
+    let policies = [];
+    
     if (Array.isArray(policyField)) {
-        return policyField.map(p => {
+        policies = policyField.map(p => {
             const name = p.name || p;
             return cleanPolicyString(name);
         });
-    }
-    
-    if (typeof policyField === 'string') {
-        return policyField
+    } else if (typeof policyField === 'string') {
+        policies = policyField
             .split(',')
             .map(p => cleanPolicyString(p))
             .filter(p => p);
     }
     
-    return [];
+    // Filter out unsupported subpolicies
+    const unsupported = [];
+    const filtered = policies.filter(policy => {
+        if (CONFIG.UNSUPPORTED_SUBPOLICIES.includes(policy)) {
+            unsupported.push(policy);
+            return false;
+        }
+        return true;
+    });
+    
+    // Return both the filtered policies and any that were removed
+    return {
+        policies: filtered,
+        unsupportedFound: unsupported
+    };
+}
+
+/**
+ * Validates that a record has all required fields
+ */
+function validateRecord(record) {
+    const missingFields = [];
+    
+    // Check required fields - WebsiteBlurb is NOT required
+    const requiredFields = ['STATE', 'BILL_TYPE', 'BILL_NUMBER'];
+    requiredFields.forEach(field => {
+        if (!record.getCellValue(CONFIG.FIELDS[field])) {
+            missingFields.push(CONFIG.FIELDS[field]);
+        }
+    });
+    
+    return {
+        valid: missingFields.length === 0,
+        missingFields: missingFields
+    };
 }
 
 /**
@@ -173,7 +240,11 @@ function generateSummary(records, errors) {
     summary.push(`📊 **Statistics**`);
     summary.push(`- Total records processed: ${records.length + errors.length}`);
     summary.push(`- Successfully exported: ${records.length}`);
-    summary.push(`- Errors encountered: ${errors.length}\n`);
+    summary.push(`- Errors encountered: ${errors.length}`);
+    
+    // Count records missing website blurb
+    const missingBlurb = records.filter(r => !r.fields.WebsiteBlurb || r.fields.WebsiteBlurb.trim() === '').length;
+    summary.push(`- Records with empty Website Blurb: ${missingBlurb} (${Math.round((missingBlurb/records.length)*100)}%)\n`);
 
     // Intent breakdown statistics
     if (records.length > 0) {
@@ -237,6 +308,29 @@ function generateSummary(records, errors) {
 }
 
 /**
+ * Checks for duplicate records in the export
+ */
+function checkForDuplicates(exportRecords) {
+    const seenBills = new Map();
+    const duplicates = [];
+    
+    exportRecords.forEach((record, index) => {
+        const billKey = `${record.fields.State}-${record.fields.BillType}${record.fields.BillNumber}`;
+        
+        if (seenBills.has(billKey)) {
+            duplicates.push({
+                billKey,
+                indexes: [seenBills.get(billKey), index]
+            });
+        } else {
+            seenBills.set(billKey, index);
+        }
+    });
+    
+    return duplicates;
+}
+
+/**
  * Main function to generate website export
  */
 async function generateWebsiteExport() {
@@ -276,15 +370,31 @@ async function generateWebsiteExport() {
     // Initialize tracking arrays
     const exportRecords = [];  // Successfully processed records
     const errors = [];         // Error tracking
+    const billsWithUnsupportedSubpolicies = []; // Track bills with unsupported subpolicies
 
     // 3. PROCESS EACH BILL
     output.markdown(`Processing ${records.records.length} bills...`);
     
     for (const record of records.records) {
         try {
+            // Validate record has required fields
+            const validation = validateRecord(record);
+            if (!validation.valid) {
+                throw new Error(`Missing required fields: ${validation.missingFields.join(', ')}`);
+            }
+            
             const webRecord = await transformRecord(record);
             if (webRecord) {
-                // Prepare record for the export table (simplified without batch connection)
+                // Check if this record had unsupported subpolicies
+                if (record.unsupportedSubpolicies && record.unsupportedSubpolicies.length > 0) {
+                    billsWithUnsupportedSubpolicies.push({
+                        billId: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 
+                               `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || ''}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
+                        unsupportedSubpolicies: record.unsupportedSubpolicies
+                    });
+                }
+                
+                // Prepare record for the export table
                 const exportRecord = {
                     fields: {
                         // Only include the transformed bill data, no batch tracking
@@ -296,10 +406,33 @@ async function generateWebsiteExport() {
             }
         } catch (error) {
             errors.push({
-                bill: record.getCellValue(CONFIG.FIELDS.BILL_ID),
+                bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || 'Unknown'}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
                 error: error.message
             });
         }
+    }
+
+    // Check for duplicates before creating records
+    const duplicates = checkForDuplicates(exportRecords);
+    if (duplicates.length > 0) {
+        output.markdown(`⚠️ Found ${duplicates.length} duplicate bills in export:`);
+        duplicates.forEach(dupe => {
+            output.markdown(`- ${dupe.billKey} appears at positions ${dupe.indexes.join(' and ')}`);
+        });
+        
+        // Option to remove duplicates if needed
+        // We'll keep the first occurrence and remove any subsequent ones
+        duplicates.forEach(dupe => {
+            // Skip the first index (keep it)
+            dupe.indexes.slice(1).forEach(indexToRemove => {
+                exportRecords[indexToRemove] = null; // Mark for removal
+            });
+        });
+        
+        // Filter out null entries
+        const filteredRecords = exportRecords.filter(r => r !== null);
+        output.markdown(`Removed ${exportRecords.length - filteredRecords.length} duplicate entries`);
+        exportRecords = filteredRecords;
     }
 
     // 4. CREATE ALL EXPORT RECORDS IN BATCHES
@@ -309,6 +442,7 @@ async function generateWebsiteExport() {
             for (let i = 0; i < exportRecords.length; i += 50) {
                 const batch = exportRecords.slice(i, i + 50);
                 await exportTable.createRecordsAsync(batch);
+                output.markdown(`Created batch ${Math.floor(i/50) + 1} of ${Math.ceil(exportRecords.length/50)} (${batch.length} records)`);
             }
             
             output.markdown(`✅ Created ${exportRecords.length} new export records`);
@@ -322,6 +456,57 @@ async function generateWebsiteExport() {
     // 5. GENERATE SUMMARY
     const summary = generateSummary(exportRecords, errors);
     output.markdown(summary);
+    
+    // Report on duplicate checks
+    output.markdown(`\n🔍 **Duplicate Bill Check**`);
+    if (duplicates && duplicates.length > 0) {
+        output.markdown(`Found and removed ${duplicates.length} duplicate bills during export.`);
+        output.markdown(`Duplicate bills included:`);
+        duplicates.slice(0, 10).forEach(dupe => {
+            output.markdown(`- ${dupe.billKey} (appeared ${dupe.indexes.length} times)`);
+        });
+        if (duplicates.length > 10) {
+            output.markdown(`... and ${duplicates.length - 10} more`);
+        }
+    } else {
+        output.markdown(`✅ No duplicate bills found in the export.`);
+    }
+    
+    // Report on unsupported subpolicies
+    if (billsWithUnsupportedSubpolicies.length > 0) {
+        output.markdown(`\n🔄 **Unsupported Subpolicies Removed**`);
+        output.markdown(`The following ${billsWithUnsupportedSubpolicies.length} bills had unsupported subpolicies that were removed from the export:`);
+        
+        // Count frequency of each unsupported subpolicy
+        const subpolicyCounts = {};
+        billsWithUnsupportedSubpolicies.forEach(bill => {
+            bill.unsupportedSubpolicies.forEach(subpolicy => {
+                subpolicyCounts[subpolicy] = (subpolicyCounts[subpolicy] || 0) + 1;
+            });
+        });
+        
+        // Show frequency of each unsupported subpolicy
+        output.markdown(`\nSubpolicy frequencies:`);
+        Object.entries(subpolicyCounts)
+            .sort(([, a], [, b]) => b - a) // Sort by frequency (highest first)
+            .forEach(([subpolicy, count]) => {
+                output.markdown(`- "${subpolicy}": found in ${count} bill(s)`);
+            });
+        
+        // List first 10 bills with their unsupported subpolicies
+        const maxToShow = Math.min(10, billsWithUnsupportedSubpolicies.length);
+        output.markdown(`\nExample bills (showing ${maxToShow} of ${billsWithUnsupportedSubpolicies.length}):`);
+        for (let i = 0; i < maxToShow; i++) {
+            const bill = billsWithUnsupportedSubpolicies[i];
+            output.markdown(`- ${bill.billId}: ${bill.unsupportedSubpolicies.join(', ')}`);
+        }
+        
+        if (billsWithUnsupportedSubpolicies.length > maxToShow) {
+            output.markdown(`... and ${billsWithUnsupportedSubpolicies.length - maxToShow} more`);
+        }
+    } else {
+        output.markdown(`\n✅ No unsupported subpolicies found in the bills.`);
+    }
     
     output.markdown(`\n**Export completed at ${new Date().toLocaleString()}**`);
 }
