@@ -36,7 +36,10 @@ const CONFIG = {
         "Sex Ed Misc Neutral",
         "Sex Ed Misc Positive",
         "Sex Ed Misc Restrictive",
-        "STI Misc Positive"
+        "STI Misc Positive",
+        "STI Misc Restrictive",
+        "Sed Ed STI Neutral",
+        "Repeals Ban on D and E Method"
     ]
 };
 
