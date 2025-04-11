@@ -205,57 +205,64 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
         
         const activeStatesList = Array.from(activeStates).sort().join(', ');
         
-        // Category coverage - improved version
-        const categoryMap = new Map(); // Using Map to track counts
+        // Category coverage - fixed for your field structure
+        const categoryMap = new Map();
         let categorizedBillsCount = 0;
-        
+
         bills.forEach(bill => {
             const topics = bill.getCellValue(CONFIG.BILLS_FIELDS.PRIMARY_TOPICS) || [];
             
-            if (Array.isArray(topics) && topics.length > 0) {
+            if (topics.length > 0) {
                 categorizedBillsCount++;
                 
                 topics.forEach(topic => {
-                    if (topic && topic.name) {
-                        const categoryName = topic.name;
-                        if (categoryMap.has(categoryName)) {
-                            categoryMap.set(categoryName, categoryMap.get(categoryName) + 1);
-                        } else {
-                            categoryMap.set(categoryName, 1);
+                    if (topic) {
+                        // Handle if topic is already a string or if it's an object with name
+                        const categoryName = typeof topic === 'string' ? topic : 
+                                        (topic.name || String(topic));
+                        
+                        if (categoryName) {
+                            if (categoryMap.has(categoryName)) {
+                                categoryMap.set(categoryName, categoryMap.get(categoryName) + 1);
+                            } else {
+                                categoryMap.set(categoryName, 1);
+                            }
                         }
                     }
                 });
             }
         });
-        
+
         // Format as category: count
         const categoriesList = Array.from(categoryMap.entries())
             .sort(([, a], [, b]) => b - a) // Sort by count (highest first)
             .map(([category, count]) => `${category}: ${count}`)
             .join('\n');
         
-        // Intent breakdown - improved version
+        // Intent breakdown - fixed for your field structure
         const intentMap = new Map();
-        
+
         bills.forEach(bill => {
             const intentValues = bill.getCellValue(CONFIG.BILLS_FIELDS.INTENT) || [];
             
-            // Handle multiple select field
-            if (Array.isArray(intentValues)) {
-                intentValues.forEach(intent => {
-                    if (intent && intent.name) {
-                        // Use the actual value from the field
-                        const intentName = intent.name;
+            // intentValues is an array of objects, each with a name property
+            intentValues.forEach(intent => {
+                if (intent) {
+                    // Handle if intent is already a string or if it's an object with name
+                    const intentName = typeof intent === 'string' ? intent : 
+                                    (intent.name ? intent.name : String(intent));
+                    
+                    if (intentName) {
                         if (intentMap.has(intentName)) {
                             intentMap.set(intentName, intentMap.get(intentName) + 1);
                         } else {
                             intentMap.set(intentName, 1);
                         }
                     }
-                });
-            }
+                }
+            });
         });
-        
+
         // Format intent breakdown
         const intentBreakdown = Array.from(intentMap.entries())
             .sort(([, a], [, b]) => b - a) // Sort by count (highest first)
