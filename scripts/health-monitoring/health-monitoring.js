@@ -617,5 +617,4 @@ if (input && input.relatedImport) {
 }
 
 // Run the health check
-// sourcery skip: return-outside-function
 return await runSystemHealthCheck(checkType, relatedImport);
