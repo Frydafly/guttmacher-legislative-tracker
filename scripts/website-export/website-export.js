@@ -18,7 +18,8 @@ const CONFIG = {
         PASSED_LEGISLATURE_DATE: 'Passed Legislature Date',
         VETOED_DATE: 'Vetoed Date',
         ENACTED_DATE: 'Enacted Date',
-        ACTION_TYPE: 'Action Type'
+        ACTION_TYPE: 'Action Type',
+        DATE_VALIDATION: 'Date Validation' // Added Date Validation field
     },
     
     // Subpolicies that are no longer supported by the website team
@@ -44,6 +45,29 @@ const CONFIG = {
 };
 
 /**
+ * Checks if a record has date validation issues
+ * Uses the Date Validation field to detect any future dates
+ */
+function checkDateValidation(record) {
+    // Get the Date Validation field value
+    const dateValidation = record.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
+    
+    // If the field contains any text, there are validation issues
+    if (dateValidation && dateValidation.trim() !== '') {
+        return {
+            valid: false,
+            message: dateValidation
+        };
+    }
+    
+    // No validation issues found
+    return {
+        valid: true,
+        message: null
+    };
+}
+
+/**
  * Transforms a bill record into the website export format
  */
 async function transformRecord(record) {
@@ -63,7 +87,9 @@ async function transformRecord(record) {
         
         // Format date function to ensure YYYY-MM-DD format
         const formatDate = (dateValue) => {
-            if (!dateValue) return null;
+            if (!dateValue) {
+              return null;
+            }
             
             if (dateValue instanceof Date) {
                 const year = dateValue.getFullYear();
@@ -236,7 +262,7 @@ function validateRecord(record) {
 /**
  * Generates a summary of the export process
  */
-function generateSummary(records, errors) {
+function generateSummary(records, errors, dateValidationErrors) {
     const summary = [`**Website Export Summary**\n`];
     
     // Record count statistics
@@ -299,7 +325,24 @@ function generateSummary(records, errors) {
         }
     }
 
-    // Error details section
+    // Date validation errors section
+    if (dateValidationErrors && dateValidationErrors.length > 0) {
+        summary.push(`⏰ **Date Validation Issues**`);
+        summary.push(`${dateValidationErrors.length} bills were skipped due to future dates:\n`);
+        
+        // Show the first 10 examples
+        const maxToShow = Math.min(10, dateValidationErrors.length);
+        for (let i = 0; i < maxToShow; i++) {
+            summary.push(`- ${dateValidationErrors[i].bill}: ${dateValidationErrors[i].error}`);
+        }
+        
+        if (dateValidationErrors.length > maxToShow) {
+            summary.push(`... and ${dateValidationErrors.length - maxToShow} more`);
+        }
+        summary.push('');
+    }
+
+    // General error details section
     if (errors.length > 0) {
         summary.push(`⚠️ **Errors**`);
         errors.forEach(({bill, error}) => {
@@ -373,6 +416,7 @@ async function generateWebsiteExport() {
     // Initialize tracking arrays
     const exportRecords = [];  // Successfully processed records
     const errors = [];         // Error tracking
+    const dateValidationErrors = []; // Track date validation issues specifically
     const billsWithUnsupportedSubpolicies = []; // Track bills with unsupported subpolicies
 
     // 3. PROCESS EACH BILL
@@ -380,6 +424,27 @@ async function generateWebsiteExport() {
     
     for (const record of records.records) {
         try {
+            // Check for date validation issues first
+            const dateCheck = checkDateValidation(record);
+            if (!dateCheck.valid) {
+                // Store date validation errors separately for better reporting
+                dateValidationErrors.push({
+                    bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 
+                         `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || ''}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
+                    error: dateCheck.message
+                });
+                
+                // Also add to general errors
+                errors.push({
+                    bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 
+                         `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || ''}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
+                    error: `Future date detected: ${dateCheck.message}`
+                });
+                
+                // Skip this record
+                continue;
+            }
+            
             // Validate record has required fields
             const validation = validateRecord(record);
             if (!validation.valid) {
@@ -457,7 +522,7 @@ async function generateWebsiteExport() {
     }
 
     // 5. GENERATE SUMMARY
-    const summary = generateSummary(exportRecords, errors);
+    const summary = generateSummary(exportRecords, errors, dateValidationErrors);
     output.markdown(summary);
     
     // Report on duplicate checks
@@ -509,6 +574,37 @@ async function generateWebsiteExport() {
         }
     } else {
         output.markdown(`\n✅ No unsupported subpolicies found in the bills.`);
+    }
+    
+    // Report on date validation issues
+    if (dateValidationErrors.length > 0) {
+        output.markdown(`\n⏰ **Date Validation Details**`);
+        output.markdown(`${dateValidationErrors.length} bills had future dates and were skipped.`);
+        
+        // Count which fields had the most issues
+        const fieldCounts = {};
+        dateValidationErrors.forEach(error => {
+            // Extract field names from the error message
+            const message = error.error;
+            const fieldMatches = message.match(/(?<=🚫s)[^0-9]+(?=s|$)/g);
+            
+            if (fieldMatches) {
+                fieldMatches.forEach(field => {
+                    const trimmedField = field.trim();
+                    if (trimmedField) {
+                        fieldCounts[trimmedField] = (fieldCounts[trimmedField] || 0) + 1;
+                    }
+                });
+            }
+        });
+        
+        // Show which fields had the most issues
+        output.markdown(`\nField frequency:`);
+        Object.entries(fieldCounts)
+            .sort(([, a], [, b]) => b - a)
+            .forEach(([field, count]) => {
+                output.markdown(`- "${field}": found in ${count} bill(s)`);
+            });
     }
     
     output.markdown(`\n**Export completed at ${new Date().toLocaleString()}**`);
