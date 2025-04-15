@@ -1,4 +1,4 @@
-// Policy Tracker Health Monitor
+// Policy Tracker Health Monitor - UPDATED VERSION
 // This script runs health checks on the policy tracker database and tracks metrics over time
 // It is designed to run weekly or after batch imports
 
@@ -22,7 +22,8 @@ const CONFIG = {
         LAST_MODIFIED: 'Last Updated',
         WEBSITE_BLURB: 'Website Blurb',
         INTRODUCED_DATE: 'Introduction Date',
-        SPECIFIC_POLICIES: 'Specific Policies'
+        SPECIFIC_POLICIES: 'Specific Policies',
+        ACTION_TYPE: 'Action Type' // Added to detect Executive Orders
     },
     // Define which statuses are considered "active" for reporting
     ACTIVE_STATUSES: [
@@ -33,13 +34,15 @@ const CONFIG = {
         'Passed Both Chambers',
         'On Governor\'s Desk'
     ],
-    // Define which statuses need website blurbs
+    // Define which statuses need website blurbs - MODIFIED to only include Enacted and Vetoed
     NEEDS_BLURB_STATUSES: [
         'Enacted',
-        'Vetoed',
-        'Passed Both Chambers',
-        'On Governor\'s Desk'
-    ]
+        'Vetoed'
+    ],
+    // Define which bill types are exempt from certain checks
+    EXEMPTIONS: {
+        EXECUTIVE_ORDER: 'Executive Order'
+    }
 };
 
 // Generate timestamp for this health check
@@ -49,13 +52,6 @@ let globalIssues = [];
 
 // Main health check function
 async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) {
-    /**
-     * Runs a comprehensive health check on the policy tracker database.
-     * This function assesses data quality, tracks key metrics, and generates a report summarizing the findings.
-     * @param {string} [checkType='Weekly'] - The type of check being performed (e.g., 'Weekly', 'Post-Import').
-     * @param {string} [relatedImport=null] - The ID of the related import batch (if applicable).
-     * @returns {Promise<object>} An object containing the results of the health check.
-     */
     console.log("## Starting System Health Check");
     console.log(`Check Type: ${checkType} | Time: ${now.toLocaleString()}`);
     
@@ -152,15 +148,40 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             return !topics || topics.length === 0;
         }).length;
         
-        // 3. Bills missing website blurbs that should have them (enacted or vetoed)
+        // 3. Bills missing website blurbs that should have them (enacted or vetoed only)
         const billsMissingBlurbs = bills.filter(bill => {
             const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
             const status = statusObj ? statusObj.name : null;
             const needsBlurb = status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
             const hasBlurb = Boolean(bill.getCellValue(CONFIG.BILLS_FIELDS.WEBSITE_BLURB));
             
-            return needsBlurb && !hasBlurb;
+            // Check if this is a DC bill awaiting congressional approval
+            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
+            const isDC = state && state.name === 'DC';
+            
+            return needsBlurb && !hasBlurb && !isDC; // Exclude DC bills
         }).length;
+        
+        // Track details of bills missing blurbs for reporting
+        const detailedMissingBlurbs = bills.filter(bill => {
+            const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
+            const status = statusObj ? statusObj.name : null;
+            const needsBlurb = status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
+            const hasBlurb = Boolean(bill.getCellValue(CONFIG.BILLS_FIELDS.WEBSITE_BLURB));
+            
+            // Check if this is a DC bill awaiting congressional approval
+            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
+            const isDC = state && state.name === 'DC';
+            
+            return needsBlurb && !hasBlurb && !isDC;
+        }).map(bill => {
+            return {
+                state: bill.getCellValue(CONFIG.BILLS_FIELDS.STATE)?.name || '',
+                billType: bill.getCellValue(CONFIG.BILLS_FIELDS.BILL_TYPE)?.name || '',
+                billNumber: bill.getCellValue(CONFIG.BILLS_FIELDS.BILL_NUMBER) || '',
+                lastAction: bill.getCellValue(CONFIG.BILLS_FIELDS.LAST_ACTION) || ''
+            };
+        });
         
         // Recently modified since last check
         const recentlyModified = bills.filter(bill => {
@@ -269,15 +290,8 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             .map(([intent, count]) => `${intent}: ${count}`)
             .join('\n');
         
-        // High priority items
-        const highPriorityItems = bills.filter(bill => {
-            const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
-            const status = statusObj ? statusObj.name : null;
-            const hasBlurb = Boolean(bill.getCellValue(CONFIG.BILLS_FIELDS.WEBSITE_BLURB));
-            
-            // High priority: Enacted or Vetoed without a website blurb
-            return (status === 'Enacted' || status === 'Vetoed') && !hasBlurb;
-        }).length;
+        // High priority items - just the missing blurbs for enacted/vetoed
+        const highPriorityItems = billsMissingBlurbs;
         
         // Identify data quality issues
         const potentialIssues = [];
@@ -287,6 +301,19 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
             const status = statusObj ? statusObj.name : null;
             const enactedDate = bill.getCellValue('Enacted Date');
+            
+            // Check if this is an Executive Order (exempt from date check)
+            const actionType = bill.getCellValue(CONFIG.BILLS_FIELDS.ACTION_TYPE) || [];
+            const actionTypeArray = Array.isArray(actionType) 
+                ? actionType.map(a => a.name || '') 
+                : typeof actionType === 'string' ? [actionType] : [];
+            
+            const isExecutiveOrder = actionTypeArray.includes(CONFIG.EXEMPTIONS.EXECUTIVE_ORDER);
+            
+            // If it's an EO, exempt it from the check
+            if (isExecutiveOrder) {
+              return false;
+            }
             
             // If status is Enacted but no enactedDate, that's an issue
             if (status === 'Enacted' && !enactedDate) {
@@ -376,6 +403,14 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
         const billsNeedingBlurbs = bills.filter(bill => {
             const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
             const status = statusObj ? statusObj.name : null;
+            
+            // Skip DC bills
+            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
+            const isDC = state && state.name === 'DC';
+            if (isDC) {
+              return false;
+            }
+            
             return status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
         }).length;
         
@@ -405,7 +440,8 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             newBillsSinceLastCheck,
             daysSinceLastCheck,
             categoryMap,
-            intentMap
+            intentMap,
+            detailedMissingBlurbs
         );
         
         // Prepare the monitor record - include report for viewing in table
@@ -465,25 +501,6 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
 
 // Generate a detailed report summary
 function generateDetailedReportSummary(
-    /**
-     * Generates a detailed summary report of the health check results.
-     * This function compiles the key metrics and data quality findings into a human-readable report.
-     * @param {number} totalBills - The total number of bills tracked.
-     * @param {object} statusCounts - An object containing the counts of bills by status.
-     * @param {number} billsMissingInfo - The number of bills missing required information.
-     * @param {number} billsMissingCategories - The number of bills missing category assignments.
-     * @param {number} billsMissingBlurbs - The number of bills missing website blurbs.
-     * @param {number} recentlyModified - The number of bills recently modified.
-     * @param {number} statusChangesSinceLastCheck - The number of status changes since the last check.
-     * @param {number} highPriorityItems - The number of high-priority items identified.
-     * @param {number} qualityScore - The overall data quality score.
-     * @param {number} exportCount - The number of bills in the latest export.
-     * @param {number} newBillsSinceLastCheck - The number of new bills since the last check.
-     * @param {number} daysSinceLastCheck - The number of days since the last check.
-     * @param {Map<string, number>} categoryMap - A map of bill categories and their counts.
-     * @param {Map<string, number>} intentMap - A map of bill intents and their counts.
-     * @returns {string} A detailed summary report of the health check.
-     */
     totalBills, 
     statusCounts, 
     billsMissingInfo, 
@@ -497,7 +514,8 @@ function generateDetailedReportSummary(
     newBillsSinceLastCheck,
     daysSinceLastCheck,
     categoryMap,
-    intentMap
+    intentMap,
+    detailedMissingBlurbs
 ) {
     // Build summary text
     let summary = [];
@@ -516,7 +534,16 @@ function generateDetailedReportSummary(
     summary.push(`Quality Score: ${qualityScore}/100`);
     summary.push(`Bills Missing Info: ${billsMissingInfo} (${Math.round((billsMissingInfo/totalBills)*100)}%)`);
     summary.push(`Bills Missing Categories: ${billsMissingCategories} (${Math.round((billsMissingCategories/totalBills)*100)}%)`);
+    
+    // Detailed breakdown of bills missing blurbs
     summary.push(`Bills Missing Blurbs: ${billsMissingBlurbs}`);
+    if (detailedMissingBlurbs && detailedMissingBlurbs.length > 0) {
+        summary.push("  Bills missing website blurbs:");
+        detailedMissingBlurbs.forEach(bill => {
+            summary.push(`  - ${bill.state}-${bill.billType}${bill.billNumber} (Last action: ${bill.lastAction || 'Unknown'})`);
+        });
+    }
+    
     summary.push(`High Priority Items: ${highPriorityItems}`);
     summary.push("");
     
@@ -557,6 +584,12 @@ function generateDetailedReportSummary(
             summary.push(`${issue.type}: ${issue.count} occurrences${issue.examples ? ` (Examples: ${issue.examples.join(', ')})` : ''}`);
         });
     }
+    
+    // Note about Executive Orders
+    summary.push("");
+    summary.push("NOTES");
+    summary.push("- Executive Orders are exempt from the enacted date requirement");
+    summary.push("- DC bills awaiting Congressional approval are exempt from blurb requirements");
     
     // Recommendations based on metrics
     let recommendations = [];

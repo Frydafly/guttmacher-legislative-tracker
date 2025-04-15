@@ -19,7 +19,7 @@ const CONFIG = {
         VETOED_DATE: 'Vetoed Date',
         ENACTED_DATE: 'Enacted Date',
         ACTION_TYPE: 'Action Type',
-        DATE_VALIDATION: 'Date Validation' // Added Date Validation field
+        DATE_VALIDATION: 'Date Validation'
     },
     
     // Subpolicies that are no longer supported by the website team
