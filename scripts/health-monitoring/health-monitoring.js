@@ -155,11 +155,7 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             const needsBlurb = status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
             const hasBlurb = Boolean(bill.getCellValue(CONFIG.BILLS_FIELDS.WEBSITE_BLURB));
             
-            // Check if this is a DC bill awaiting congressional approval
-            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
-            const isDC = state && state.name === 'DC';
-            
-            return needsBlurb && !hasBlurb && !isDC; // Exclude DC bills
+            return needsBlurb && !hasBlurb; // Count ALL enacted/vetoed bills without blurbs
         }).length;
         
         // Track details of bills missing blurbs for reporting
@@ -169,11 +165,7 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             const needsBlurb = status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
             const hasBlurb = Boolean(bill.getCellValue(CONFIG.BILLS_FIELDS.WEBSITE_BLURB));
             
-            // Check if this is a DC bill awaiting congressional approval
-            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
-            const isDC = state && state.name === 'DC';
-            
-            return needsBlurb && !hasBlurb && !isDC;
+            return needsBlurb && !hasBlurb;
         }).map(bill => {
             return {
                 state: bill.getCellValue(CONFIG.BILLS_FIELDS.STATE)?.name || '',
@@ -311,9 +303,7 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             const isExecutiveOrder = actionTypeArray.includes(CONFIG.EXEMPTIONS.EXECUTIVE_ORDER);
             
             // If it's an EO, exempt it from the check
-            if (isExecutiveOrder) {
-              return false;
-            }
+            if (isExecutiveOrder) return false;
             
             // If status is Enacted but no enactedDate, that's an issue
             if (status === 'Enacted' && !enactedDate) {
@@ -403,13 +393,6 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
         const billsNeedingBlurbs = bills.filter(bill => {
             const statusObj = bill.getCellValue(CONFIG.BILLS_FIELDS.STATUS);
             const status = statusObj ? statusObj.name : null;
-            
-            // Skip DC bills
-            const state = bill.getCellValue(CONFIG.BILLS_FIELDS.STATE);
-            const isDC = state && state.name === 'DC';
-            if (isDC) {
-              return false;
-            }
             
             return status && CONFIG.NEEDS_BLURB_STATUSES.includes(status);
         }).length;
@@ -589,7 +572,6 @@ function generateDetailedReportSummary(
     summary.push("");
     summary.push("NOTES");
     summary.push("- Executive Orders are exempt from the enacted date requirement");
-    summary.push("- DC bills awaiting Congressional approval are exempt from blurb requirements");
     
     // Recommendations based on metrics
     let recommendations = [];
