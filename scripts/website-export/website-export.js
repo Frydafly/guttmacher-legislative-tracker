@@ -510,7 +510,7 @@ async function generateWebsiteExport() {
             for (let i = 0; i < exportRecords.length; i += 50) {
                 const batch = exportRecords.slice(i, i + 50);
                 await exportTable.createRecordsAsync(batch);
-                output.markdown(`Created batch ${Math.floor(i/50) + 1} of ${Math.ceil(exportRecords.length/50)} (${batch.length} records)`);
+                // No progress messages for each batch to keep the output cleaner
             }
             
             output.markdown(`✅ Created ${exportRecords.length} new export records`);
