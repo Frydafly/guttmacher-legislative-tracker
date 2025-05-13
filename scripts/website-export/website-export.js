@@ -125,9 +125,26 @@ async function transformRecord(record) {
         const enactedStatus = enactedDate ? '1' : '0';
         const passed2ChamberStatus = passedLegislatureDate ? '1' : '0';
 
-        // Process intent flags
+        // Process intent flags - handle multiple selections in a more robust way
         const intent = record.getCellValue(CONFIG.FIELDS.INTENT) || [];
-        const intentArray = Array.isArray(intent) ? intent.map(i => i.name) : [];
+        let intentValues = [];
+
+        // Handle different possible formats of the intent field
+        if (Array.isArray(intent)) {
+            // Multiple select field returns an array of objects
+            intentValues = intent.map(i => i.name || i);
+        } else if (typeof intent === 'object' && intent !== null) {
+            // Single object might be returned
+            intentValues = [intent.name || ''];
+        } else if (typeof intent === 'string') {
+            // Raw string might be returned
+            intentValues = [intent];
+        }
+
+        // Check if ANY of the multiple values match our target intent types
+        const hasPositive = intentValues.some(val => val.includes('Positive'));
+        const hasNeutral = intentValues.some(val => val.includes('Neutral'));
+        const hasRestrictive = intentValues.some(val => val.includes('Restrictive'));   
         
         // Determine if bill is a ballot initiative or court case
         const actionType = record.getCellValue(CONFIG.FIELDS.ACTION_TYPE) || [];
@@ -182,9 +199,9 @@ async function transformRecord(record) {
             Vetoed: vetoedStatus,
             EnactedDate: enactedDate,
             Enacted: enactedStatus,
-            Positive: intentArray.includes('Protective') ? '1' : '0',
-            Neutral: intentArray.includes('Neutral') ? '1' : '0',
-            Restrictive: intentArray.includes('Restrictive') ? '1' : '0'
+            Positive: hasPositive ? '1' : '0',
+            Neutral: hasNeutral ? '1' : '0',
+            Restrictive: hasRestrictive ? '1' : '0'
         };
     } catch (error) {
         throw new Error(`Transformation error: ${error.message}`);
