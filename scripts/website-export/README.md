@@ -1,195 +1,422 @@
-# Guttmacher Policy Tracker: Website Export Script
+# Website Export Script
 
-## 📝 Overview
+## 🌐 Overview
 
-This Airtable script automates the export of legislative bill data from the Policy Tracker to a format compatible with the external website display. It performs a complete refresh of the export table each time it runs, ensuring the website always has the most current data.
+The Website Export Script transforms internal legislative tracking data into a public-facing format suitable for the Guttmacher Institute's website. This critical integration ensures accurate, timely information reaches the public while maintaining data integrity through comprehensive validation and transformation processes.
 
-## 🌟 Key Features
+### Key Capabilities
 
-- Complete refresh of export data (deletes old records before creating new ones)
-- Proper formatting of dates and policy fields
-- Extraction of subpolicies from legislative data
-- Mapping of intent tags (Protective, Neutral, Restrictive)
-- Conversion of legislative dates to boolean flags when needed
-- Comprehensive export statistics
-- Detailed error reporting
+- **Complete Data Refresh**: Implements clean slate approach for consistency
+- **Smart Field Mapping**: Transforms complex internal data to web-friendly format
+- **Subpolicy Extraction**: Handles up to 10 subpolicies per bill with filtering
+- **Intent Flag Generation**: Creates binary indicators from multi-select fields
+- **Rich Text Handling**: Properly extracts content from formatted fields
+- **Duplicate Detection**: Identifies and removes duplicate bills
+- **Validation & Reporting**: Comprehensive error checking with detailed summaries
 
-## 🔧 Prerequisites
+## 🔄 Data Flow
 
-- Airtable base with two tables:
-  1. "Bills" table - containing tracked legislation
-  2. "Website Exports" table - destination for formatted export data
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   Bills Table   │────▶│ Website Export   │────▶│ Website Exports │
+│ (Source Data)   │     │     Script       │     │     Table       │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+         │                       │                         │
+         │                       ▼                         ▼
+         │              ┌──────────────────┐      ┌─────────────────┐
+         │              │   Validation &   │      │   CSV Export    │
+         └─────────────▶│   Transformation │      │  for Website    │
+                        └──────────────────┘      └─────────────────┘
+```
 
-## 🚀 How to Use
+## 🚀 Quick Start
 
-1. **Prepare Bills for Export**:
-   - Complete the "Website Blurb" field with the public-facing description
-   - Check the "Ready for Website" checkbox
-   - Ensure all policy fields are properly categorized
+### Prerequisites
 
-2. **Run the Script**:
-   - Navigate to the Automations or Scripts panel
-   - Run the "Website Export" script
-   - The script will clear the export table and populate it with fresh data
+- Access to Guttmacher Policy Tracker Airtable base
+- Permission to run scripts and modify tables
+- Understanding of the Bills table structure
 
-3. **Download Export Data**:
-   - After the script completes, navigate to the Website Exports table
-   - Download as CSV
-   - Provide to the website team
+### Running the Export
 
-## 🔍 What Gets Exported
+1. **Navigate to Extensions**
+   - Open the Policy Tracker base
+   - Click "Extensions" in the toolbar
+   - Select "Website Exports v2"
 
-The script transforms and exports the following fields:
+2. **Review Pre-run Checklist**
+   - [ ] Recent data import completed
+   - [ ] Health check shows good quality score
+   - [ ] No ongoing bill updates
+   - [ ] Previous export archived if needed
 
-### Core Bill Information
+3. **Execute Script**
+   - Click "Run" button
+   - Monitor progress in console
+   - Review summary report
+   - Check for any errors
 
-- State
-- BillType
-- BillNumber
-- Ballot Initiative (derived from Action Type)
-- Court Case (derived from Action Type)
-
-### Content
-
-- WebsiteBlurb
-- Subpolicy1-10 (from Specific Policies)
-
-### Status and Dates
-
-- Last Action Date
-- IntroducedDate
-- Passed1ChamberDate
-- Passed 2 Chamber (Boolean: 1/0 based on PassedLegislature date)
-- PassedLegislature
-- VetoedDate
-- EnactedDate
-
-### Intent Tags
-
-- Positive (1/0 if Intent includes "Protective")
-- Neutral (1/0 if Intent includes "Neutral")
-- Restrictive (1/0 if Intent includes "Restrictive")
+4. **Export Results**
+   - Go to Website Exports table
+   - Use "Download CSV" option
+   - Send to web team
 
 ## ⚙️ Configuration
 
-The script uses a CONFIG object to map fields. If your field names differ, update this section:
+The script configuration controls field mappings and filtering:
 
 ```javascript
 const CONFIG = {
+    // Source field mappings from Bills table
     FIELDS: {
+        // Identifiers
         BILL_ID: 'BillID',
         STATE: 'State',
         BILL_TYPE: 'BillType',
         BILL_NUMBER: 'BillNumber',
+        
+        // Status and intent
         LAST_ACTION: 'Last Action',
-        INTENT: 'Intent (access)',
-        SPECIFIC_POLICIES_ACCESS: 'Specific Policies (access)',
+        INTENT: 'Intent',
+        ACTION_TYPE: 'Action Type',
+        
+        // Policy categorization
+        SPECIFIC_POLICIES_ACCESS: 'Specific Policies',
+        
+        // Content
         WEBSITE_BLURB: 'Website Blurb',
-        READY_FOR_WEBSITE: 'Ready for Website',
+        
+        // Key dates
         INTRODUCED_DATE: 'Introduction Date',
         PASSED1_CHAMBER_DATE: 'Passed 1 Chamber Date',
         PASSED_LEGISLATURE_DATE: 'Passed Legislature Date',
         VETOED_DATE: 'Vetoed Date',
         ENACTED_DATE: 'Enacted Date',
-        ACTION_TYPE: 'Action Type'
-    }
+        
+        // Validation
+        DATE_VALIDATION: 'Date Validation'
+    },
+    
+    // Legacy subpolicies to filter out
+    UNSUPPORTED_SUBPOLICIES: [
+        "AB Misc Neutral",
+        "AB Ban Partial-Birth Abortion",
+        "CPC Misc Restrictive",
+        "FP Funding Restricted Other",
+        "FP Right to Contraception",
+        "INS Misc Positive",
+        "Pregnancy HIV Test for Preg Women",
+        "Parental Leave",
+        "Repeals Ban All or Most AB Ban",
+        "Repeals Counsel Perinatal Hospice Info",
+        "Sex Ed Misc Neutral",
+        "Sex Ed Misc Positive",
+        "Sex Ed Misc Restrictive",
+        "STI Misc Positive",
+        "STI Misc Restrictive",
+        "Sed Ed STI Neutral",
+        "Repeals Ban on D and E Method"
+    ]
 };
 ```
 
-## 📊 Export Summary
+## 📊 Field Mapping Reference
 
-Each export generates a detailed report including:
+### Input Fields (Bills Table) → Output Fields (Website Exports)
 
-- Export statistics (processed, successful, errors)
-- Intent breakdown (Positive/Neutral/Restrictive)
-- State breakdown
-- Any errors encountered
+| Source Field | Output Field | Transformation |
+|-------------|--------------|----------------|
+| State | State | Direct copy |
+| BillType | BillType | Direct copy |
+| BillNumber | BillNumber | Convert to string |
+| Action Type | Ballot Initiative | Binary: 1 if includes "Ballot Initiative", else 0 |
+| Action Type | Court Case | Binary: 1 if includes "Court Case", else 0 |
+| Specific Policies | Subpolicy1-10 | First 10 policies, filtered for unsupported |
+| Website Blurb | WebsiteBlurb | Rich text extraction, newline removal |
+| Last Action | Last Action Date | Date formatting (YYYY-MM-DD) |
+| Introduction Date | IntroducedDate | Date formatting |
+| Passed 1 Chamber Date | Passed1ChamberDate | Date formatting |
+| Passed Legislature Date | PassedLegislature | Date formatting |
+| Passed Legislature Date | Passed 2 Chamber | Binary: 1 if date exists, else 0 |
+| Vetoed Date | VetoedDate | Date formatting |
+| Vetoed Date | Vetoed | Binary: 1 if date exists, else 0 |
+| Enacted Date | EnactedDate | Date formatting |
+| Enacted Date | Enacted | Binary: 1 if date exists, else 0 |
+| Intent | Positive | Binary: 1 if includes "Positive", else 0 |
+| Intent | Neutral | Binary: 1 if includes "Neutral", else 0 |
+| Intent | Restrictive | Binary: 1 if includes "Restrictive", else 0 |
 
-Example summary:
+## 📋 Export Process Details
 
-```plaintext
-📊 Statistics
-- Total records processed: 125
-- Successfully exported: 123
-- Errors encountered: 2
-
-📑 Intent Breakdown
-- Restrictive: 62
-- Positive: 45
-- Neutral: 16
-
-🌎 State Breakdown
-- TX: 15
-- FL: 12
-- NY: 10
-...
+### 1. Data Cleanup Phase
+```javascript
+// Script clears all existing records
+const existingRecords = await exportTable.selectRecordsAsync();
+for (let i = 0; i < recordIds.length; i += 50) {
+    const batchIds = recordIds.slice(i, i + 50);
+    await exportTable.deleteRecordsAsync(batchIds);
+}
 ```
 
-## 🛠️ Troubleshooting
+### 2. Transformation Phase
+- Loads all bills (no filtering)
+- Validates required fields
+- Transforms each record
+- Handles rich text fields
+- Applies date formatting
+- Filters unsupported subpolicies
+
+### 3. Validation Phase
+- Checks for future dates
+- Identifies missing required fields
+- Detects duplicate bills
+- Logs all issues
+
+### 4. Export Creation Phase
+- Creates records in batches of 50
+- Maintains transformation audit trail
+- Generates comprehensive summary
+
+## 🔍 Export Summary Sections
+
+The script generates a detailed summary report:
+
+### Statistics Section
+```
+📊 Statistics
+- Total records processed: 3,456
+- Successfully exported: 3,421
+- Errors encountered: 35
+- Records with empty Website Blurb: 234 (7%)
+```
+
+### Intent Breakdown
+```
+📑 Intent Breakdown
+- Restrictive: 1,890
+- Positive: 1,234
+- Neutral: 297
+```
+
+### State Distribution
+```
+🌎 State Breakdown
+- TX: 456
+- CA: 389
+- NY: 234
+[... all states listed]
+```
+
+### Data Quality Issues
+```
+⏰ Date Validation Issues
+15 bills were skipped due to future dates:
+
+- TX-HB123: 🚫 Enacted Date (2025-12-31) is in the future
+- CA-SB456: 🚫 Vetoed Date (2025-06-15) is in the future
+```
+
+## 🐛 Troubleshooting
 
 ### Common Issues
 
-1. **Field Not Found Errors**:
-   - Ensure all field names in CONFIG match exactly what's in your Airtable
-   - Check for typos in field names
-   - Verify that all required fields exist in your tables
+#### Website Blurbs Not Exporting
+**Problem**: ~40% of blurbs showing as null  
+**Solution**: Script now handles rich text fields properly
+```javascript
+// Rich text field handling
+if (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null) {
+    websiteBlurb = websiteBlurbValue.text || '';
+}
+```
 
-2. **No Records Being Exported**:
-   - Confirm bills have the "Ready for Website" checkbox checked
-   - Verify "Website Blurb" fields are filled out
-   - Check filter conditions if customized
+#### Duplicate Bills in Export
+**Problem**: Same bill appears multiple times  
+**Solution**: Script includes duplicate detection
+```javascript
+// Duplicate checking implemented
+const duplicates = checkForDuplicates(exportRecords);
+// First occurrence kept, subsequent removed
+```
 
-3. **Date Formatting Issues**:
-   - The script attempts to normalize various date formats
-   - Check for malformed dates in your source data
+#### Script Timeout
+**Problem**: Export fails on large datasets  
+**Solutions**:
+- Run during off-peak hours
+- Increase script timeout limit
+- Contact Airtable support for enterprise limits
 
-4. **Error with Batch Processing**:
-   - The script processes records in batches of 50 (Airtable limit)
-   - For large exports, watch for timeout errors
+#### Date Format Issues
+**Problem**: Dates not formatting correctly  
+**Solution**: Use the formatDate function
+```javascript
+const formatDate = (dateValue) => {
+    // Handles Date objects and strings
+    // Returns YYYY-MM-DD format
+    // Returns null for invalid dates
+};
+```
 
-### Field Requirements
+### Debug Mode
 
-These fields must be properly set up in your Bills table:
+Enable detailed logging:
 
-- State (Single select)
-- BillType (Single select)
-- BillNumber (Text)
-- Website Blurb (Long text)
-- Ready for Website (Checkbox)
-- Date fields (various)
-- Intent fields (Multiple select)
+```javascript
+// Add to top of script
+const DEBUG = true;
 
-## 📋 Export Table Structure
+// Throughout script
+if (DEBUG) {
+    console.log(`Processing bill ${billId}...`);
+    console.log(`Intent values:`, intentValues);
+}
+```
 
-The Website Exports table should have these fields:
+## 📚 Best Practices
 
-| Field Name | Description | Type |
-|------------|-------------|------|
-| State | State abbreviation | Text |
-| BillType | Type of bill | Text |
-| BillNumber | Specific bill number | Text |
-| Ballot Initiative | Flag for ballot initiatives (1/0) | Text |
-| Court Case | Flag for court cases (1/0) | Text |
-| Subpolicy1-10 | Individual policy components | Text |
-| WebsiteBlurb | Website-ready description | Long Text |
-| Last Action Date | Most recent date | Date/Text |
-| IntroducedDate | Introduction date | Date/Text |
-| Passed1ChamberDate | First chamber passage | Date/Text |
-| Passed 2 Chamber | Second chamber passage flag (1/0) | Text |
-| PassedLegislature | Legislature passage | Date/Text |
-| VetoedDate | Veto date | Date/Text |
-| EnactedDate | Enactment date | Date/Text |
-| Positive | Protective intent flag (1/0) | Text |
-| Neutral | Neutral intent flag (1/0) | Text |
-| Restrictive | Restrictive intent flag (1/0) | Text |
+### Pre-Export Checklist
 
-## 🔄 Website Update Process
+1. **Data Quality Check**
+   - Run health monitor script
+   - Review quality score (should be >85)
+   - Address high-priority issues
 
-The full website update process involves:
+2. **Timing Considerations**
+   - Avoid running during active data entry
+   - Schedule after import completions
+   - Allow time for manual review
 
-1. Running this export script
-2. Downloading the CSV from the Website Exports table
-3. Providing the CSV to the website team
-4. Website team uploads and processes the data
+3. **Validation Steps**
+   - Compare record counts with previous export
+   - Spot-check several transformed records
+   - Verify date formatting
+   - Check intent flag accuracy
 
-Typically, this process happens bi-monthly (1st and 15th of each month).
+### Post-Export Verification
+
+1. **Record Count Validation**
+   ```sql
+   -- Compare counts
+   SELECT COUNT(*) FROM Bills WHERE Status != 'Dead';
+   SELECT COUNT(*) FROM Website_Exports;
+   ```
+
+2. **Data Integrity Checks**
+   - No null values in required fields
+   - All dates in correct format
+   - Subpolicies properly distributed
+   - Intent flags match source data
+
+3. **Website Team Handoff**
+   - Include export summary in email
+   - Note any data quality concerns
+   - Provide record count comparison
+   - Highlight significant changes
+
+## 🔧 Advanced Customization
+
+### Adding New Fields
+
+1. **Update CONFIG**
+   ```javascript
+   FIELDS: {
+       // ... existing fields
+       NEW_FIELD: 'New Field Name'
+   }
+   ```
+
+2. **Add to Transformation**
+   ```javascript
+   // In transformRecord function
+   const newFieldValue = record.getCellValue(CONFIG.FIELDS.NEW_FIELD);
+   // Apply any necessary transformation
+   ```
+
+3. **Include in Output**
+   ```javascript
+   return {
+       // ... existing fields
+       NewFieldName: transformedValue
+   };
+   ```
+
+### Custom Filters
+
+Add bill filtering logic:
+
+```javascript
+// Example: Exclude specific states
+const EXCLUDED_STATES = ['AS', 'GU', 'PR'];
+if (EXCLUDED_STATES.includes(state)) {
+    continue; // Skip this record
+}
+
+// Example: Only export recent bills
+const DAYS_THRESHOLD = 365;
+const lastAction = record.getCellValue(CONFIG.FIELDS.LAST_ACTION);
+if (lastAction) {
+    const daysSinceAction = 
+        (new Date() - new Date(lastAction)) / (1000 * 60 * 60 * 24);
+    if (daysSinceAction > DAYS_THRESHOLD) {
+        continue; // Skip old bills
+    }
+}
+```
+
+### Performance Optimization
+
+For very large datasets:
+
+```javascript
+// 1. Selective field loading
+const records = await billsTable.selectRecordsAsync({
+    fields: Object.values(CONFIG.FIELDS)
+});
+
+// 2. Parallel processing
+const chunks = [];
+const CHUNK_SIZE = 100;
+for (let i = 0; i < records.length; i += CHUNK_SIZE) {
+    chunks.push(records.slice(i, i + CHUNK_SIZE));
+}
+
+// Process chunks in parallel
+const results = await Promise.all(
+    chunks.map(chunk => processChunk(chunk))
+);
+```
+
+## 🔒 Security & Data Integrity
+
+- **No External Calls**: Script runs entirely within Airtable
+- **Audit Trail**: Each export timestamped and summarized
+- **Data Validation**: Multiple checks prevent bad data export
+- **Access Control**: Limited to authorized Airtable users
+- **Rollback Capability**: Previous exports preserved until overwritten
+
+## 📞 Support
+
+**Technical Issues**: fryda.guedes@proton.me  
+**Export Questions**: Contact web team  
+**Script Updates**: Check this repository
+
+## 📝 Version History
+
+- **v2.3** (Current): Fixed rich text blurb extraction issue
+- **v2.2**: Added intent value flags for website
+- **v2.1**: Removed access policy mapping
+- **v2.0**: Complete rewrite with validation
+- **v1.0**: Initial export functionality
+
+## 🔮 Future Enhancements
+
+Planned improvements:
+- Incremental export option
+- Real-time validation warnings
+- Automated quality reports
+- API endpoint integration
+- Historical change tracking
+
+---
+
+*Last updated: January 2025*
