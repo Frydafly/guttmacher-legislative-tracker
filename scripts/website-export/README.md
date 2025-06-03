@@ -149,6 +149,7 @@ const CONFIG = {
 ## 📋 Export Process Details
 
 ### 1. Data Cleanup Phase
+
 ```javascript
 // Script clears all existing records
 const existingRecords = await exportTable.selectRecordsAsync();
@@ -159,6 +160,7 @@ for (let i = 0; i < recordIds.length; i += 50) {
 ```
 
 ### 2. Transformation Phase
+
 - Loads all bills (no filtering)
 - Validates required fields
 - Transforms each record
@@ -167,12 +169,14 @@ for (let i = 0; i < recordIds.length; i += 50) {
 - Filters unsupported subpolicies
 
 ### 3. Validation Phase
+
 - Checks for future dates
 - Identifies missing required fields
 - Detects duplicate bills
 - Logs all issues
 
 ### 4. Export Creation Phase
+
 - Creates records in batches of 50
 - Maintains transformation audit trail
 - Generates comprehensive summary
@@ -182,6 +186,7 @@ for (let i = 0; i < recordIds.length; i += 50) {
 The script generates a detailed summary report:
 
 ### Statistics Section
+
 ```
 📊 Statistics
 - Total records processed: 3,456
@@ -191,6 +196,7 @@ The script generates a detailed summary report:
 ```
 
 ### Intent Breakdown
+
 ```
 📑 Intent Breakdown
 - Restrictive: 1,890
@@ -199,6 +205,7 @@ The script generates a detailed summary report:
 ```
 
 ### State Distribution
+
 ```
 🌎 State Breakdown
 - TX: 456
@@ -208,6 +215,7 @@ The script generates a detailed summary report:
 ```
 
 ### Data Quality Issues
+
 ```
 ⏰ Date Validation Issues
 15 bills were skipped due to future dates:
@@ -221,8 +229,10 @@ The script generates a detailed summary report:
 ### Common Issues
 
 #### Website Blurbs Not Exporting
+
 **Problem**: ~40% of blurbs showing as null  
 **Solution**: Script now handles rich text fields properly
+
 ```javascript
 // Rich text field handling
 if (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null) {
@@ -231,8 +241,10 @@ if (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null) {
 ```
 
 #### Duplicate Bills in Export
+
 **Problem**: Same bill appears multiple times  
 **Solution**: Script includes duplicate detection
+
 ```javascript
 // Duplicate checking implemented
 const duplicates = checkForDuplicates(exportRecords);
@@ -240,15 +252,19 @@ const duplicates = checkForDuplicates(exportRecords);
 ```
 
 #### Script Timeout
+
 **Problem**: Export fails on large datasets  
 **Solutions**:
+
 - Run during off-peak hours
 - Increase script timeout limit
 - Contact Airtable support for enterprise limits
 
 #### Date Format Issues
+
 **Problem**: Dates not formatting correctly  
 **Solution**: Use the formatDate function
+
 ```javascript
 const formatDate = (dateValue) => {
     // Handles Date objects and strings
@@ -295,6 +311,7 @@ if (DEBUG) {
 ### Post-Export Verification
 
 1. **Record Count Validation**
+
    ```sql
    -- Compare counts
    SELECT COUNT(*) FROM Bills WHERE Status != 'Dead';
@@ -318,6 +335,7 @@ if (DEBUG) {
 ### Adding New Fields
 
 1. **Update CONFIG**
+
    ```javascript
    FIELDS: {
        // ... existing fields
@@ -326,6 +344,7 @@ if (DEBUG) {
    ```
 
 2. **Add to Transformation**
+
    ```javascript
    // In transformRecord function
    const newFieldValue = record.getCellValue(CONFIG.FIELDS.NEW_FIELD);
@@ -333,6 +352,7 @@ if (DEBUG) {
    ```
 
 3. **Include in Output**
+
    ```javascript
    return {
        // ... existing fields
@@ -396,7 +416,7 @@ const results = await Promise.all(
 
 ## 📞 Support
 
-**Technical Issues**: fryda.guedes@proton.me  
+**Technical Issues**: <fryda.guedes@proton.me>  
 **Export Questions**: Contact web team  
 **Script Updates**: Check this repository
 
@@ -411,6 +431,7 @@ const results = await Promise.all(
 ## 🔮 Future Enhancements
 
 Planned improvements:
+
 - Incremental export option
 - Real-time validation warnings
 - Automated quality reports
