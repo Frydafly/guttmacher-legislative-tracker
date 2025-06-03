@@ -303,7 +303,9 @@ async function runSystemHealthCheck(checkType = 'Weekly', relatedImport = null) 
             const isExecutiveOrder = actionTypeArray.includes(CONFIG.EXEMPTIONS.EXECUTIVE_ORDER);
             
             // If it's an EO, exempt it from the check
-            if (isExecutiveOrder) return false;
+            if (isExecutiveOrder) {
+                return false;
+            }
             
             // If status is Enacted but no enactedDate, that's an issue
             if (status === 'Enacted' && !enactedDate) {
