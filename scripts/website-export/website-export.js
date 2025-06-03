@@ -79,7 +79,19 @@ async function transformRecord(record) {
         
         // Sanitize website blurb to remove problematic newlines and other characters
         // that might interfere with CSV import
-        let websiteBlurb = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB) || '';
+        let websiteBlurbValue = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
+        let websiteBlurb = '';
+        
+        // Handle rich text fields which return objects
+        if (websiteBlurbValue) {
+            if (typeof websiteBlurbValue === 'string') {
+                websiteBlurb = websiteBlurbValue;
+            } else if (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null) {
+                // Rich text fields return an object - extract the text content
+                websiteBlurb = websiteBlurbValue.text || websiteBlurbValue.toString() || '';
+            }
+        }
+        
         // Replace all newlines, carriage returns, and tabs with spaces
         websiteBlurb = websiteBlurb.replace(/[\r\n\t]+/g, ' ');
         // Normalize multiple spaces to single spaces
