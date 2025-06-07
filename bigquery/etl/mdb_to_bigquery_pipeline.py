@@ -4,14 +4,13 @@ Complete pipeline to extract all MDB files and load to BigQuery.
 Uses mdbtools for extraction since it's more reliable on Mac.
 """
 
-import subprocess
-import pandas as pd
-from pathlib import Path
-import json
-import re
-from datetime import datetime
-from google.cloud import bigquery
 import logging
+import re
+import subprocess
+from pathlib import Path
+
+import pandas as pd
+from google.cloud import bigquery
 
 # Setup logging
 logging.basicConfig(
@@ -244,8 +243,9 @@ class MDBToBigQueryPipeline:
 def main():
     """Run the complete pipeline."""
     # Load configuration from .env file
-    from dotenv import load_dotenv
     import os
+
+    from dotenv import load_dotenv
     
     load_dotenv()
     
