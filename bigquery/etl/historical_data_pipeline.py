@@ -8,7 +8,6 @@ import json
 import logging
 import re
 import subprocess
-from datetime import datetime
 from pathlib import Path
 
 import pandas as pd

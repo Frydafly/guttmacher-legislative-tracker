@@ -4,7 +4,6 @@ Explore MDB files using mdbtools (Mac/Linux alternative to pyodbc).
 First install: brew install mdbtools
 """
 
-import json
 import subprocess
 from pathlib import Path
 
