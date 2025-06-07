@@ -4,6 +4,7 @@
         "automations",
         "Guttmacher",
         "Preg",
+        "pyodbc",
         "sandboxed",
         "subpolicies"
     ]

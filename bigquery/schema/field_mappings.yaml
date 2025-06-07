@@ -1,0 +1,210 @@
+# Field mappings from historical MDB data to current Airtable structure
+# This configuration drives the transformation pipeline
+
+# Current Airtable Bills table structure (target schema)
+target_schema:
+  bills:
+    bill_id: STRING
+    state: STRING
+    bill_type: STRING
+    bill_number: STRING
+    current_bill_status: STRING
+    policy_categories: ARRAY<STRING>
+    intent: ARRAY<STRING>
+    specific_policies: ARRAY<STRING>
+    action_type: ARRAY<STRING>
+    introduction_date: DATE
+    last_action: DATE
+    passed_1_chamber_date: DATE
+    passed_legislature_date: DATE
+    vetoed_date: DATE
+    enacted_date: DATE
+    website_blurb: STRING
+    last_updated: TIMESTAMP
+    import_date: DATE
+    date_validation: STRING
+    data_source: STRING  # Added to track historical vs current
+    data_year: INTEGER   # Year of the data
+
+# Historical field mappings by table type
+historical_mappings:
+  state_legislative_table:
+    # Core identifiers
+    bill_id: 
+      - "ID"
+      - "id"
+      - "Bill ID"
+    
+    state:
+      - "State"
+      - "state"
+      - "State Name"
+    
+    bill_number:
+      - "Bill Number"
+      - "bill_number" 
+      - "BillNumber"
+      - "Bill #"
+    
+    bill_type:
+      - "Bill Type"
+      - "bill_type"
+      - "Type"
+      - "BillType"
+    
+    current_bill_status:
+      - "Status"
+      - "Current Status"
+      - "Bill Status"
+      - "status"
+    
+    title:
+      - "Title"
+      - "Bill Title"
+      - "Description"
+      - "Summary"
+    
+    # Dates (various formats in historical data)
+    introduction_date:
+      - "Introduction Date"
+      - "Introduced"
+      - "Date Introduced"
+      - "intro_date"
+    
+    last_action:
+      - "Last Action"
+      - "Last Action Date"
+      - "last_action_date"
+    
+    enacted_date:
+      - "Enacted Date"
+      - "Date Enacted"
+      - "enacted"
+    
+    vetoed_date:
+      - "Vetoed Date"
+      - "Date Vetoed"
+      - "vetoed"
+    
+    # Text fields
+    website_blurb:
+      - "Description"
+      - "Summary"
+      - "Synopsis"
+      - "Notes"
+      - "Comments"
+    
+    # Tracking fields
+    read_by:
+      - "Read by"
+      - "Analyst"
+      - "Reviewed by"
+
+  specific_issue_areas:
+    policy_category:
+      - "Specific Monitoring Category"
+      - "Issue Area"
+      - "Policy Area"
+      - "Category"
+
+# Data type transformations
+type_casting:
+  dates:
+    formats:
+      - "%Y-%m-%d"       # 2023-01-15
+      - "%m/%d/%Y"       # 1/15/2023
+      - "%m/%d/%y"       # 1/15/23
+      - "%Y/%m/%d"       # 2023/1/15
+      - "%B %d, %Y"      # January 15, 2023
+      - "%b %d, %Y"      # Jan 15, 2023
+      - "%d-%b-%Y"       # 15-Jan-2023
+    null_values:
+      - ""
+      - "NULL"
+      - "N/A"
+      - "TBD"
+      - "Unknown"
+
+  strings:
+    trim: true
+    null_values:
+      - ""
+      - "NULL"
+      - "N/A"
+      - "None"
+    max_length: 10000  # For BigQuery STRING type
+
+  integers:
+    null_values:
+      - ""
+      - "NULL"
+      - "N/A"
+      - "0"  # Sometimes 0 means null in historical data
+
+# Value standardization rules
+standardization:
+  states:
+    # Map various state formats to standard abbreviations
+    "Alabama": "AL"
+    "Alaska": "AK"
+    "Arizona": "AZ"
+    # ... (would include all 50 states)
+    
+  bill_types:
+    # Standardize bill type variations
+    "House Bill": "HB"
+    "Senate Bill": "SB"
+    "Assembly Bill": "AB"
+    "Constitutional Amendment": "CA"
+    "House Joint Resolution": "HJR"
+    "Senate Joint Resolution": "SJR"
+    "House Resolution": "HR"
+    "Senate Resolution": "SR"
+    
+  statuses:
+    # Map historical status values to current categories
+    "Passed": "Enacted"
+    "Failed": "Dead/Failed"
+    "Vetoed": "Vetoed"
+    "Withdrawn": "Dead/Failed"
+    "Tabled": "Stalled"
+    "Committee": "In Committee"
+    "Floor": "On Floor"
+    
+  intents:
+    # Default intent mapping (may need manual review)
+    default_positive_keywords:
+      - "expand"
+      - "protect"
+      - "improve"
+      - "access"
+      - "coverage"
+    default_restrictive_keywords:
+      - "restrict"
+      - "ban"
+      - "prohibit"
+      - "limit"
+      - "reduce"
+
+# Data quality rules
+quality_checks:
+  required_fields:
+    - "state"
+    - "bill_number"
+    - "data_year"
+  
+  valid_ranges:
+    data_year:
+      min: 2000
+      max: 2030
+  
+  valid_values:
+    states:
+      # List of valid state codes
+      - "AL" # Alabama
+      - "AK" # Alaska
+      # ... (all states)
+      
+  format_validation:
+    bill_number:
+      pattern: "^[A-Z]{1,3}[\\s]?\\d{1,4}[A-Z]?$"  # HB 123, SB123A, etc.

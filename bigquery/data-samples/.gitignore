@@ -1,0 +1,9 @@
+# Ignore actual data files
+*.csv
+*.xlsx
+*.json
+*.parquet
+
+# Keep sample files
+!sample-*.csv
+!structure-*.csv
