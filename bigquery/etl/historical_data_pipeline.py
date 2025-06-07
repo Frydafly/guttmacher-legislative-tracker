@@ -119,24 +119,32 @@ class HistoricalDataPipeline:
             # Configure job for staging (replace each year's data)
             job_config = bigquery.LoadJobConfig(
                 write_disposition="WRITE_TRUNCATE",
-                autodetect=True,
-                schema_update_options=[
-                    bigquery.SchemaUpdateOption.ALLOW_FIELD_ADDITION,
-                    bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
-                ]
+                autodetect=True
             )
             
             try:
-                # Convert arrays to JSON strings for BigQuery compatibility
+                # Clean column names for BigQuery compatibility
                 df_for_bq = df.copy()
+                
+                # Fix column names
+                df_for_bq.columns = df_for_bq.columns.str.replace(' ', '_', regex=False)
+                df_for_bq.columns = df_for_bq.columns.str.replace('/', '_', regex=False)
+                df_for_bq.columns = df_for_bq.columns.str.replace('[^A-Za-z0-9_]', '_', regex=True)
+                df_for_bq.columns = df_for_bq.columns.str.replace('__+', '_', regex=True)
+                df_for_bq.columns = df_for_bq.columns.str.strip('_')
+                df_for_bq.columns = df_for_bq.columns.str.lower()
+                
+                # Convert arrays to JSON strings for BigQuery compatibility
                 for col in df_for_bq.columns:
                     if df_for_bq[col].dtype == 'object':
                         # Check if column contains lists
-                        sample_val = df_for_bq[col].dropna().iloc[0] if not df_for_bq[col].dropna().empty else None
-                        if isinstance(sample_val, list):
-                            df_for_bq[col] = df_for_bq[col].apply(
-                                lambda x: json.dumps(x) if isinstance(x, list) else x
-                            )
+                        non_null_vals = df_for_bq[col].dropna()
+                        if not non_null_vals.empty:
+                            sample_val = non_null_vals.iloc[0]
+                            if isinstance(sample_val, list):
+                                df_for_bq[col] = df_for_bq[col].apply(
+                                    lambda x: json.dumps(x) if isinstance(x, list) else x
+                                )
                 
                 job = self.bq_client.load_table_from_dataframe(
                     df_for_bq, table_id, job_config=job_config

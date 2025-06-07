@@ -8,9 +8,9 @@ pyarrow>=10.0.0  # Required for DataFrame to BigQuery
 PyYAML>=6.0.0  # For configuration file parsing
 python-dotenv>=1.0.0  # For environment variables
 
-# Database drivers - install based on your OS
-pyodbc>=4.0.0  # Windows/Mac with ODBC drivers
-# mdbtools  # Alternative for Mac/Linux - install via brew/apt
+# Database drivers
+# mdbtools - install via: brew install mdbtools (Mac) or apt-get install mdbtools (Linux)
+# pyodbc>=4.0.0  # Optional: Windows/Mac with ODBC drivers (alternative to mdbtools)
 
 # Optional but recommended
 tqdm>=4.0.0  # Progress bars for large imports

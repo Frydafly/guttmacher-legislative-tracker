@@ -2,26 +2,21 @@
 """Test connections for BigQuery pipeline."""
 
 import sys
+import subprocess
 from pathlib import Path
 
-# Test pyodbc
+# Test mdbtools
 try:
-    import pyodbc
-    drivers = pyodbc.drivers()
-    print("✓ pyodbc installed successfully")
-    print(f"  Available ODBC drivers: {drivers}")
-    
-    access_drivers = [d for d in drivers if 'Access' in d or 'MDB' in d or 'Microsoft' in d]
-    if access_drivers:
-        print(f"  Access-compatible drivers found: {access_drivers}")
+    result = subprocess.run(['mdb-tables', '--help'], capture_output=True, text=True)
+    if result.returncode == 0:
+        print("✓ mdbtools installed and working")
     else:
-        print("  ⚠ No Access drivers found. You may need to:")
-        print("    - On Mac: Use mdbtools or install Microsoft ODBC driver")
-        print("    - On Windows: Drivers should be pre-installed")
-        print("    - On Linux: Install mdbtools")
-except ImportError:
-    print("✗ pyodbc not installed. Run: pip install pyodbc")
-    print("  Note: You may need to install ODBC drivers first (see setup.md)")
+        print("✗ mdbtools not working properly")
+except FileNotFoundError:
+    print("✗ mdbtools not found. Install with:")
+    print("  Mac: brew install mdbtools")
+    print("  Linux: sudo apt-get install mdbtools")
+    print("  This is required for reading .mdb files")
 
 print()
 

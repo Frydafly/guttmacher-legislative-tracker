@@ -101,11 +101,16 @@ class HistoricalDataTransformer:
                     except:
                         pass
                 
-                df[col] = parsed_dates.dt.date
+                # Convert to date objects, handling NaT values
+                df[col] = parsed_dates.apply(lambda x: x.date() if pd.notna(x) else None)
                 
                 # Log parsing success rate
-                success_rate = (parsed_dates.notna() & df[col].notna()).sum() / df[col].notna().sum() * 100 if df[col].notna().sum() > 0 else 0
-                logger.info(f"Date parsing success rate for {col}: {success_rate:.1f}%")
+                total_non_null = df[col].notna().sum()
+                if total_non_null > 0:
+                    success_rate = parsed_dates.notna().sum() / len(df) * 100
+                    logger.info(f"Date parsing success rate for {col}: {success_rate:.1f}%")
+                else:
+                    logger.info(f"No valid dates found in {col}")
         
         return df
     
