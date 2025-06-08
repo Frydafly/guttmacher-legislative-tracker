@@ -101,6 +101,14 @@ Total: 394 bills processed
 3. **Explore** the union tables for detailed analysis
 4. **Add more data** by copying additional .mdb files
 
+```text
+Expected Output:
+✓ 2002: 177 bills from X states
+✓ 2003: 110 bills from X states  
+✓ 2004: 107 bills from X states
+Total: 394 bills processed
+```
+
 ## 🆘 Quick Troubleshooting
 
 | Issue | Solution |

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Test connections for BigQuery pipeline."""
 
+
 import subprocess
-import sys
 from pathlib import Path
 
 # Test mdbtools
 try:
-    result = subprocess.run(["mdb-tables", "--help"], capture_output=True, text=True)
+    result = subprocess.run(
+        ["mdb-tables", "--help"], capture_output=True, text=True, check=False
+    )
     if result.returncode == 0:
         print("✓ mdbtools installed and working")
     else:
@@ -43,12 +45,16 @@ try:
         # Try to list datasets
         datasets = list(client.list_datasets())
         print(f"  Found {len(datasets)} datasets")
-    except Exception as e:
+    except ImportError as e:
+        print(f"✗ Required Google Cloud libraries not found: {e}")
+        print("  Run: pip install google-cloud-bigquery")
+    except (RuntimeError, OSError, ValueError) as e:
         print(f"✗ Could not connect to BigQuery: {e}")
         print("  Make sure to run: gcloud auth application-default login")
 except ImportError:
     print(
-        "✗ google-cloud-bigquery not installed. Run: pip install google-cloud-bigquery"
+        "✗ google-cloud-bigquery not installed. "
+        "Run: pip install google-cloud-bigquery"
     )
 
 print()
@@ -58,15 +64,16 @@ env_path = Path(__file__).parent.parent / ".env"
 if env_path.exists():
     print(f"✓ .env file found at {env_path}")
 else:
-    print(f"⚠ No .env file found. Copy .env.example to .env and configure")
+    print("⚠ No .env file found. Copy .env.example to .env and configure")
 
 print()
 
 # Test for MDB files
 data_path = Path(__file__).parent.parent / "data" / "historical"
 if data_path.exists():
-    mdb_files = list(data_path.glob("*.mdb")) + list(data_path.glob("*.accdb"))
-    if mdb_files:
+    if mdb_files := list(data_path.glob("*.mdb")) + list(
+        data_path.glob("*.accdb")
+    ):
         print(f"✓ Found {len(mdb_files)} database files:")
         for f in mdb_files[:5]:  # Show first 5
             print(f"  - {f.name}")

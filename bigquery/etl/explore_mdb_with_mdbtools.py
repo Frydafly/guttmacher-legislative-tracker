@@ -14,14 +14,16 @@ def list_tables_in_mdb(mdb_path):
     """List all tables in an MDB file using mdbtools."""
     try:
         result = subprocess.run(
-            ["mdb-tables", "-1", str(mdb_path)], capture_output=True, text=True
+            ["mdb-tables", "-1", str(mdb_path)],
+            capture_output=True, text=True, check=False
         )
         if result.returncode == 0:
-            tables = [t.strip() for t in result.stdout.strip().split("\n") if t.strip()]
-            return tables
-        else:
-            print(f"Error: {result.stderr}")
-            return []
+            return [
+                t.strip() for t in result.stdout.strip().split("\n")
+                if t.strip()
+            ]
+        print(f"Error: {result.stderr}")
+        return []
     except FileNotFoundError:
         print("mdbtools not found. Install with: brew install mdbtools")
         return []
@@ -32,10 +34,10 @@ def export_table_to_csv(mdb_path, table_name, output_path):
     cmd = ["mdb-export", str(mdb_path), table_name]
 
     try:
-        with open(output_path, "w") as f:
-            result = subprocess.run(cmd, stdout=f, text=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            result = subprocess.run(cmd, stdout=f, text=True, check=False)
         return result.returncode == 0
-    except Exception as e:
+    except OSError as e:
         print(f"Error exporting {table_name}: {e}")
         return False
 
@@ -45,16 +47,21 @@ def get_table_schema(mdb_path, table_name):
     cmd = ["mdb-schema", str(mdb_path), "-T", table_name]
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        if result.returncode == 0:
-            return result.stdout
-        return None
-    except Exception as e:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, check=False
+        )
+        return result.stdout if result.returncode == 0 else None
+    except OSError as e:
         print(f"Error getting schema: {e}")
         return None
 
 
 def main():
+    """Explore MDB files and export sample tables to CSV.
+
+    This function locates MDB files, lists their tables,
+    and exports sample tables to CSV for inspection.
+    """
     # Find MDB files
     data_path = Path(__file__).parent.parent / "data" / "historical"
     mdb_files = list(data_path.glob("*.mdb"))
@@ -98,7 +105,11 @@ def main():
                     df = pd.read_csv(output_file, nrows=5)
                     print(f"    Columns: {', '.join(df.columns[:5])}")
                     print(f"    Rows: {len(pd.read_csv(output_file))}")
-                except Exception as e:
+                except (
+                        pd.errors.ParserError,
+                        FileNotFoundError,
+                        UnicodeDecodeError
+                ) as e:
                     print(f"    Could not read CSV: {e}")
 
 

@@ -4,8 +4,9 @@ Data transformation pipeline for historical legislative data.
 Handles inconsistent schemas, type casting, and standardization.
 """
 
+
+import contextlib
 import logging
-import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class HistoricalDataTransformer:
+    """Transform historical legislative data to match current schema."""
     def __init__(self, config_path=None):
         """Initialize transformer with field mappings configuration."""
         if config_path is None:
@@ -24,7 +26,7 @@ class HistoricalDataTransformer:
                 Path(__file__).parent.parent / "schema" / "field_mappings.yaml"
             )
 
-        with open(config_path, "r") as f:
+        with open(config_path, "r", encoding="utf-8") as f:
             self.config = yaml.safe_load(f)
 
         self.target_schema = self.config["target_schema"]["bills"]
@@ -36,7 +38,7 @@ class HistoricalDataTransformer:
     def map_columns(self, df, table_type="state_legislative_table"):
         """Map historical column names to standard field names."""
         if table_type not in self.mappings:
-            logger.warning(f"No mapping found for table type: {table_type}")
+            logger.warning("No mapping found for table type: %s", table_type)
             return df
 
         mapping_rules = self.mappings[table_type]
@@ -58,11 +60,12 @@ class HistoricalDataTransformer:
 
         # Log mapping results
         mapped_fields = list(column_mapping.values())
-        logger.info(f"Mapped {len(mapped_fields)} fields: {mapped_fields}")
+        logger.info("Mapped %d fields: %s", len(mapped_fields), mapped_fields)
 
-        unmapped_cols = [col for col in df.columns if col not in column_mapping]
-        if unmapped_cols:
-            logger.warning(f"Unmapped columns: {unmapped_cols}")
+        if unmapped_cols := [
+            col for col in df.columns if col not in column_mapping
+        ]:
+            logger.warning("Unmapped columns: %s", unmapped_cols)
 
         return df_mapped
 
@@ -74,7 +77,7 @@ class HistoricalDataTransformer:
 
         for col in date_fields:
             if col in df.columns:
-                logger.info(f"Processing date field: {col}")
+                logger.info("Processing date field: %s", col)
 
                 # Replace null values
                 df[col] = df[col].replace(null_values, np.nan)
@@ -87,23 +90,29 @@ class HistoricalDataTransformer:
                     if mask.any():
                         try:
                             temp_dates = pd.to_datetime(
-                                df.loc[mask, col], format=date_format, errors="coerce"
+                                df.loc[mask, col],
+                                format=date_format,
+                                errors="coerce"
                             )
                             parsed_dates.loc[mask] = temp_dates
-                        except Exception as e:
+                        except (
+                                ValueError, TypeError, pd.errors.ParserError
+                        ) as e:
                             logger.debug(
-                                f"Date format {date_format} failed for {col}: {e}"
+                                "Date format %s failed for %s: %s",
+                                date_format, col, e
                             )
 
                 # Final attempt with flexible parsing
                 mask = parsed_dates.isna() & df[col].notna()
                 if mask.any():
-                    try:
-                        temp_dates = pd.to_datetime(df.loc[mask, col], errors="coerce")
+                    with contextlib.suppress(
+                            ValueError, TypeError, pd.errors.ParserError
+                    ):
+                        temp_dates = pd.to_datetime(
+                            df.loc[mask, col], errors="coerce"
+                        )
                         parsed_dates.loc[mask] = temp_dates
-                    except:
-                        pass
-
                 # Convert to date objects, handling NaT values
                 df[col] = parsed_dates.apply(
                     lambda x: x.date() if pd.notna(x) else None
@@ -114,10 +123,11 @@ class HistoricalDataTransformer:
                 if total_non_null > 0:
                     success_rate = parsed_dates.notna().sum() / len(df) * 100
                     logger.info(
-                        f"Date parsing success rate for {col}: {success_rate:.1f}%"
+                        "Date parsing success rate for %s: %.1f%%",
+                        col, success_rate
                     )
                 else:
-                    logger.info(f"No valid dates found in {col}")
+                    logger.info("No valid dates found in %s", col)
 
         return df
 
@@ -155,25 +165,30 @@ class HistoricalDataTransformer:
 
         text_lower = str(text).lower()
 
-        positive_keywords = self.standardization["intents"]["default_positive_keywords"]
+        positive_keywords = self.standardization["intents"][
+            "default_positive_keywords"
+        ]
         restrictive_keywords = self.standardization["intents"][
             "default_restrictive_keywords"
         ]
 
-        has_positive = any(keyword in text_lower for keyword in positive_keywords)
-        has_restrictive = any(keyword in text_lower for keyword in restrictive_keywords)
+        has_positive = any(
+            keyword in text_lower for keyword in positive_keywords
+        )
+        has_restrictive = any(
+            keyword in text_lower for keyword in restrictive_keywords
+        )
 
         if has_positive and not has_restrictive:
             return ["Positive"]
         elif has_restrictive and not has_positive:
             return ["Restrictive"]
-        elif has_positive and has_restrictive:
+        if has_positive and has_restrictive:
             return ["Positive", "Restrictive"]  # Mixed intent
-        else:
-            return ["Neutral"]
+        return ["Neutral"]
 
     def add_derived_fields(self, df, data_year):
-        """Add fields that don't exist in historical data but are needed for current schema."""
+        """Add fields that don't exist in historical data but are needed."""
 
         # Add data tracking fields
         df["data_source"] = "Historical"
@@ -184,7 +199,10 @@ class HistoricalDataTransformer:
         # Generate bill_id if missing
         if "bill_id" not in df.columns or df["bill_id"].isna().all():
             df["bill_id"] = df.apply(
-                lambda row: f"{row.get('state', 'UNK')}_{data_year}_{row.get('bill_number', '').replace(' ', '')}",
+                lambda row: (
+                    f"{row.get('state', 'UNK')}_{data_year}_"
+                    f"{row.get('bill_number', '').replace(' ', '')}"
+                ),
                 axis=1,
             )
 
@@ -227,7 +245,8 @@ class HistoricalDataTransformer:
                 invalid_count = ((df[field] < min_val) | (df[field] > max_val)).sum()
                 if invalid_count > 0:
                     issues.append(
-                        f"{field} has {invalid_count} values outside valid range [{min_val}, {max_val}]"
+                        f"{field} has {invalid_count} values outside "
+                        f"valid range [{min_val}, {max_val}]"
                     )
 
         # Check valid values
@@ -235,12 +254,14 @@ class HistoricalDataTransformer:
             if field in df.columns:
                 invalid_count = (~df[field].isin(valid_values + [np.nan])).sum()
                 if invalid_count > 0:
-                    issues.append(f"{field} has {invalid_count} invalid values")
+                    issues.append(
+                        f"{field} has {invalid_count} invalid values"
+                    )
 
         # Log issues
         if issues:
             for issue in issues:
-                logger.warning(f"Data quality issue: {issue}")
+                logger.warning("Data quality issue: %s", issue)
         else:
             logger.info("All data quality checks passed")
 
@@ -250,8 +271,8 @@ class HistoricalDataTransformer:
         self, df, data_year, table_type="state_legislative_table"
     ):
         """Complete transformation pipeline for historical data."""
-        logger.info(f"Transforming {table_type} data for year {data_year}")
-        logger.info(f"Input shape: {df.shape}")
+        logger.info("Transforming %s data for year %d", table_type, data_year)
+        logger.info("Input shape: %s", df.shape)
 
         # Step 1: Map column names
         df = self.map_columns(df, table_type)
@@ -271,8 +292,8 @@ class HistoricalDataTransformer:
         # Step 6: Ensure target schema compliance
         df = self.ensure_target_schema(df)
 
-        logger.info(f"Output shape: {df.shape}")
-        logger.info(f"Final columns: {list(df.columns)}")
+        logger.info("Output shape: %s", df.shape)
+        logger.info("Final columns: %s", list(df.columns))
 
         return df
 

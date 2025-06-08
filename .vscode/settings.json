@@ -2,7 +2,11 @@
     "cSpell.words": [
         "Airtable",
         "automations",
+        "dotenv",
         "Guttmacher",
+        "levelname",
+        "mdbtools",
+        "nrows",
         "Preg",
         "pyodbc",
         "sandboxed",

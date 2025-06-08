@@ -55,7 +55,7 @@ bigquery/
 ├── 📂 data/
 │   ├── historical/                  # 📥 Place .mdb files here
 │   ├── staging/                     # Temporary CSV exports
-│   ├── processed/                   # Execution logs and state
+│   ├── execution/                   # Pipeline execution state and metadata
 │   └── README.md
 ├── 📂 logs/                         # Pipeline execution logs
 ├── requirements.txt                 # Production dependencies
@@ -238,7 +238,7 @@ historical_mappings:
 
 - **Console Output**: Real-time progress during execution
 - **Log Files**: `logs/pipeline.log` for persistent logging
-- **Execution State**: `data/processed/pipeline_state_*.json`
+- **Execution State**: `data/execution/pipeline_state_*.json`
 
 ## 🛠️ Troubleshooting
 
@@ -352,7 +352,7 @@ pytest --cov=etl
 
 1. **Check logs** in `logs/` directory for detailed error messages
 2. **Validate environment** with `--validate` flag
-3. **Review execution state** in `data/processed/` for debugging
+3. **Review execution state** in `data/execution/` for debugging
 4. **Test with simple mode** before using advanced features
 
 ### Performance Metrics

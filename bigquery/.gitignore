@@ -54,8 +54,8 @@ Thumbs.db
 data/historical/*.mdb
 data/historical/*.accdb
 data/staging/*.csv
-data/processed/*
-!data/processed/.gitkeep
+data/execution/*
+!data/execution/.gitkeep
 
 # Log files
 *.log
