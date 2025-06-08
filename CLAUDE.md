@@ -31,9 +31,7 @@ The Guttmacher Legislative Tracker is a dual-purpose repository containing:
 3. **website-export.js**: Manual export script that transforms bill data for public website consumption
 
 ### BigQuery Pipeline
-1. **historical_data_pipeline.py**: Complete ETL pipeline for processing .mdb files
-2. **data_transformer.py**: Core transformation logic for standardizing historical data
-3. **mdb_to_bigquery_pipeline.py**: Alternative pipeline using mdbtools
+1. **migration_pipeline.py**: Single script for one-time historical data migration (2002-2024)
 
 ## Development Commands
 
@@ -51,11 +49,8 @@ python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
 
-# Test setup
-python etl/test_connection.py
-
-# Run pipeline
-python etl/historical_data_pipeline.py
+# Run one-time migration
+python etl/migration_pipeline.py
 ```
 
 ## Important Technical Details
