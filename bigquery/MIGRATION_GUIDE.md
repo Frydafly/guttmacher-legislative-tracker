@@ -37,7 +37,7 @@ cp .env.example .env
 Copy all your .mdb files (2002-2024) to:
 
 ```zsh
-bigquery/data/historical/
+data/
 ```
 
 Example file names:
@@ -53,12 +53,12 @@ Example file names:
 
 ```bash
 # Single command - migrates everything
-python etl/migration_pipeline.py
+python migration_pipeline.py
 ```
 
 You'll see progress like this:
 
-```
+```zsh
 🔍 Validating migration setup...
 ✅ mdbtools available
 ✅ BigQuery access confirmed
@@ -104,7 +104,7 @@ After migration completes:
 
 ### "No .mdb files found"
 
-- Make sure files are in `bigquery/data/historical/`
+- Make sure files are in `data/`
 - Files should have .mdb extension
 
 ### "mdbtools not found"
@@ -130,20 +130,17 @@ gcloud auth application-default login
 
 ## File Structure After Migration
 
-```
+```markdown
 bigquery/
-├── data/
-│   ├── historical/          # Your .mdb files (2002-2024)
-│   └── staging/             # Temporary CSV files (auto-cleaned)
-├── etl/
-│   └── migration_pipeline.py # ← The only script you need
+├── data/                    # Your .mdb files (2002-2024)
+├── migration_pipeline.py    # ← The only script you need
 ├── migration.log            # Migration log file
 └── .env                     # Your configuration
 ```
 
 ## What's Already Here
 
-✅ **Sample Data Ready**: There are already 3 .mdb files in `data/historical/`:
+✅ **Sample Data Ready**: There are already 3 .mdb files in `data/`:
 
 - `2002 state legislation (back end).mdb`
 - `2003 state legislation (back end).mdb`
@@ -156,11 +153,11 @@ You can test the migration immediately with these files, then add more .mdb file
 1. **Test with current data** (2002-2004):
 
    ```bash
-   python etl/migration_pipeline.py
+   python migration_pipeline.py
    ```
 
 2. **Add remaining years** (2005-2024):
-   - Copy additional .mdb files to `data/historical/`
+   - Copy additional .mdb files to `data/`
    - Run migration again to include new years
 
 3. **Connect to Looker Studio**:
@@ -169,6 +166,6 @@ You can test the migration immediately with these files, then add more .mdb file
 
 ## Need Help?
 
-- **Migration log**: Check `bigquery/migration.log` for detailed progress
+- **Migration log**: Check `migration.log` for detailed progress
 - **Script output**: The migration provides real-time progress updates
 - **BigQuery Console**: Verify tables at <https://console.cloud.google.com/bigquery>

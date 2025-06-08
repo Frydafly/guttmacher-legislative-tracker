@@ -13,7 +13,7 @@ Prerequisites:
     1. brew install mdbtools
     2. pip install -r requirements.txt
     3. gcloud auth application-default login
-    4. Copy .mdb files to ../data/historical/
+    4. Copy .mdb files to ./data/
     5. Configure .env file with GCP_PROJECT_ID
 """
 
@@ -52,10 +52,8 @@ class MigrationPipeline:
         self.bq_client = bigquery.Client(project=self.project_id)
 
         # Setup paths
-        self.base_path = Path(__file__).parent.parent
-        self.data_path = self.base_path / "data" / "historical"
-        self.staging_path = self.base_path / "data" / "staging"
-        self.staging_path.mkdir(parents=True, exist_ok=True)
+        self.base_path = Path(__file__).parent
+        self.data_path = self.base_path / "data"
 
         # Migration statistics
         self.stats = {
@@ -152,26 +150,23 @@ class MigrationPipeline:
             self.logger.error("Timeout listing tables in %s", mdb_path.name)
             return []
 
-    def export_table_to_csv(self, mdb_path: Path, table: str, year: int) -> Optional[Path]:
-        """Export a single table to CSV."""
-        csv_file = self.staging_path / f"{year}_{table.replace(' ', '_')}.csv"
-
+    def export_table_to_dataframe(self, mdb_path: Path, table: str) -> Optional[pd.DataFrame]:
+        """Export a single table directly to DataFrame."""
         try:
-            with open(csv_file, "w", encoding="utf-8") as f:
-                result = subprocess.run(
-                    ["mdb-export", str(mdb_path), table],
-                    stdout=f, text=True, timeout=120, check=False
-                )
+            result = subprocess.run(
+                ["mdb-export", str(mdb_path), table],
+                capture_output=True, text=True, timeout=120, check=False
+            )
 
-            if (result.returncode == 0 and csv_file.exists() and
-                    csv_file.stat().st_size > 0):
-                return csv_file
-            csv_file.unlink(missing_ok=True)
+            if result.returncode == 0 and result.stdout.strip():
+                # Use StringIO to read CSV data directly into pandas
+                from io import StringIO
+                df = pd.read_csv(StringIO(result.stdout), low_memory=False)
+                return None if df.empty else df
             return None
 
-        except (subprocess.TimeoutExpired, OSError, IOError) as e:
+        except (subprocess.TimeoutExpired, OSError, pd.errors.ParserError) as e:
             self.logger.warning("Failed to export %s: %s", table, e)
-            csv_file.unlink(missing_ok=True)
             return None
 
     def clean_dataframe_for_bigquery(self, df: pd.DataFrame, year: int) -> pd.DataFrame:
@@ -255,16 +250,11 @@ class MigrationPipeline:
 
         # Process each table
         for table in tqdm(tables, desc=f"Processing {year}"):
-            csv_file = self.export_table_to_csv(mdb_path, table, year)
-            if not csv_file:
+            df = self.export_table_to_dataframe(mdb_path, table)
+            if df is None or df.empty:
                 continue
 
             try:
-                # Load CSV
-                df = pd.read_csv(csv_file, low_memory=False)
-                if df.empty:
-                    continue
-
                 # Clean for BigQuery
                 df_clean = self.clean_dataframe_for_bigquery(df, year)
 
@@ -288,9 +278,6 @@ class MigrationPipeline:
             except (pd.errors.ParserError, OSError, ValueError) as e:
                 self.logger.error("Error processing table %s: %s", table, e)
                 continue
-            finally:
-                # Clean up CSV
-                csv_file.unlink(missing_ok=True)
 
         # Update statistics
         if success_count > 0:
@@ -379,7 +366,7 @@ class MigrationPipeline:
         for table in tables:
             table_cols = table_schemas.get(table, {})
             select_parts = []
-            
+
             for col in sorted_columns:
                 if col in table_cols:
                     # Cast all columns to STRING to ensure compatibility
@@ -387,7 +374,7 @@ class MigrationPipeline:
                 else:
                     # Add NULL as STRING for missing columns
                     select_parts.append(f"CAST(NULL AS STRING) AS `{col}`")
-            
+
             select_statement = f"""
             SELECT {', '.join(select_parts)}
             FROM `{self.project_id}.{self.dataset_id}.{table}`
@@ -410,9 +397,52 @@ class MigrationPipeline:
         except google_exceptions.GoogleCloudError as e:
             self.logger.error("Failed to create view %s: %s", view_name, e)
 
+    def verify_bigquery_data(self):
+        """Verify data was actually loaded to BigQuery."""
+        verification_results = {}
+
+        # Check bills data
+        bills_query = f"""
+        SELECT COUNT(*) as total_bills, COUNT(DISTINCT data_year) as years_count
+        FROM `{self.project_id}.{self.dataset_id}.all_historical_bills`
+        """
+
+        try:
+            result = self.bq_client.query(bills_query).result()
+            row = next(result)
+            verification_results["bills"] = {
+                "total": row.total_bills,
+                "years": row.years_count
+            }
+        except google_exceptions.GoogleCloudError as e:
+            self.logger.error("Failed to verify bills data: %s", e)
+            verification_results["bills"] = {"error": str(e)}
+
+        # Check categories data
+        categories_query = f"""
+        SELECT COUNT(*) as total_categories, COUNT(DISTINCT data_year) as years_count
+        FROM `{self.project_id}.{self.dataset_id}.all_historical_categories`
+        """
+
+        try:
+            result = self.bq_client.query(categories_query).result()
+            row = next(result)
+            verification_results["categories"] = {
+                "total": row.total_categories,
+                "years": row.years_count
+            }
+        except google_exceptions.GoogleCloudError as e:
+            self.logger.error("Failed to verify categories data: %s", e)
+            verification_results["categories"] = {"error": str(e)}
+
+        return verification_results
+
     def generate_final_report(self):
-        """Generate migration completion report."""
+        """Generate migration completion report with BigQuery verification."""
         duration = datetime.now() - self.stats["start_time"]
+
+        # Verify data in BigQuery
+        verification = self.verify_bigquery_data()
 
         print("\n" + "="*80)
         print("🎉 HISTORICAL DATA MIGRATION COMPLETE!")
@@ -422,6 +452,20 @@ class MigrationPipeline:
         print(f"📅 Years: {sorted(self.stats['years_processed'])}")
         print(f"📋 Total Bills: {self.stats['total_bills']:,}")
         print(f"📂 Total Categories: {self.stats['total_categories']:,}")
+
+        # BigQuery verification
+        print("\n🔍 BIGQUERY VERIFICATION:")
+        if "error" not in verification.get("bills", {}):
+            bills_data = verification["bills"]
+            print(f"✅ Bills in BigQuery: {bills_data['total']:,} rows across {bills_data['years']} years")
+        else:
+            print(f"❌ Bills verification failed: {verification['bills']['error']}")
+
+        if "error" not in verification.get("categories", {}):
+            cats_data = verification["categories"]
+            print(f"✅ Categories in BigQuery: {cats_data['total']:,} rows across {cats_data['years']} years")
+        else:
+            print(f"❌ Categories verification failed: {verification['categories']['error']}")
 
         if self.stats["errors"]:
             print(f"\n⚠️  Errors ({len(self.stats['errors'])}):")
