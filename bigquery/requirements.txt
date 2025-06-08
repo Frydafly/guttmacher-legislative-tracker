@@ -1,0 +1,16 @@
+# Core dependencies for MDB to BigQuery pipeline
+pandas>=2.0.0
+google-cloud-bigquery>=3.0.0
+google-cloud-bigquery-storage>=2.0.0  # For faster data loading
+pyarrow>=10.0.0  # Required for DataFrame to BigQuery
+
+# Configuration and data processing
+PyYAML>=6.0.0  # For configuration file parsing
+python-dotenv>=1.0.0  # For environment variables
+
+# Database drivers
+# mdbtools - install via: brew install mdbtools (Mac) or apt-get install mdbtools (Linux)
+# pyodbc>=4.0.0  # Optional: Windows/Mac with ODBC drivers (alternative to mdbtools)
+
+# Optional but recommended
+tqdm>=4.0.0  # Progress bars for large imports

@@ -1,6 +1,10 @@
-# Guttmacher Legislative Tracker - Automation Scripts
+# Guttmacher Legislative Tracker
 
-A comprehensive automation system for tracking and managing legislative bills related to reproductive health and gender-affirming care across all U.S. states. This repository maintains critical scripts that power the Guttmacher Institute's Policy Tracker through Airtable automations.
+A dual-purpose repository containing:
+1. **Airtable automation scripts** for tracking reproductive health and gender-affirming care legislation
+2. **BigQuery components** for staging and analyzing historical legislative data
+
+This repository maintains critical scripts that power the Guttmacher Institute's Policy Tracker through Airtable automations, as well as tools for historical data analysis in BigQuery.
 
 ## 🎯 Project Overview
 
@@ -19,7 +23,7 @@ The Guttmacher Legislative Tracker monitors thousands of bills across the United
 guttmacher-legislative-tracker/
 ├── README.md                           # This file
 ├── CLAUDE.md                          # AI assistant guidance
-├── scripts/
+├── airtable-scripts/                  # Airtable automation scripts
 │   ├── health-monitoring/             # Weekly health check automation
 │   │   ├── README.md                 # Detailed health monitor docs
 │   │   └── health-monitoring.js      # Health check implementation
@@ -29,6 +33,12 @@ guttmacher-legislative-tracker/
 │   └── website-export/                # Public data export
 │       ├── README.md                 # Export process documentation
 │       └── website-export.js         # Export transformation script
+└── bigquery/                          # BigQuery data staging components
+    ├── README.md                      # BigQuery documentation
+    ├── schema/                        # Table definitions
+    ├── etl/                          # ETL scripts
+    ├── sql/                          # Analysis queries
+    └── data-samples/                 # Sample data files
 ```
 
 ## 🚀 Quick Start
@@ -72,7 +82,7 @@ Performs comprehensive weekly health checks to ensure data quality and integrity
 - 30% - Category assignment coverage
 - 40% - Website blurb completeness for enacted/vetoed bills
 
-[View detailed documentation →](scripts/health-monitoring/README.md)
+[View detailed documentation →](airtable-scripts/health-monitoring/README.md)
 
 ### 2. Partner Email Report Script
 Generates bi-weekly legislative update emails for partner organizations.
@@ -83,7 +93,7 @@ Generates bi-weekly legislative update emails for partner organizations.
 - HTML and plain text output formats
 - Automated distribution via Airtable
 
-[View detailed documentation →](scripts/partner-email-report/README.md)
+[View detailed documentation →](airtable-scripts/partner-email-report/README.md)
 
 ### 3. Website Export Script
 Transforms internal tracking data for public website consumption.
@@ -95,7 +105,7 @@ Transforms internal tracking data for public website consumption.
 - Rich text field handling
 - Duplicate detection and removal
 
-[View detailed documentation →](scripts/website-export/README.md)
+[View detailed documentation →](airtable-scripts/website-export/README.md)
 
 ## 🗄️ Database Schema
 

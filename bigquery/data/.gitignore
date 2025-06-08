@@ -1,0 +1,13 @@
+# Ignore all database files (sensitive data)
+*.mdb
+*.accdb
+*.ldb
+
+# Ignore extracted data
+*.csv
+*.json
+*.parquet
+
+# Keep directory structure
+!.gitignore
+!README.md
