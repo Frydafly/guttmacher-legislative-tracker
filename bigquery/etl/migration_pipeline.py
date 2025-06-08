@@ -307,8 +307,8 @@ class MigrationPipeline:
         return False
 
     def create_union_views(self):
-        """Create union views for analysis."""
-        self.logger.info("🔗 Creating union views...")
+        """Create union views for analysis with schema harmonization."""
+        self.logger.info("🔗 Creating union views with schema harmonization...")
 
         # Find all tables
         query = f"""
@@ -329,7 +329,7 @@ class MigrationPipeline:
         bills_tables = [t for t in all_tables if "_bills_" in t]
         categories_tables = [t for t in all_tables if "_categories_" in t]
 
-        # Create union views
+        # Create union views with schema harmonization
         for table_group, view_name in [
             (bills_tables, "all_historical_bills"),
             (categories_tables, "all_historical_categories")
@@ -337,22 +337,78 @@ class MigrationPipeline:
             if not table_group:
                 continue
 
-            union_queries = [
-                f"SELECT * FROM `{self.project_id}.{self.dataset_id}.{table}`"
-                for table in table_group
-            ]
+            self._create_harmonized_union_view(table_group, view_name)
 
-            create_view = f"""
-            CREATE OR REPLACE VIEW `{self.project_id}.{self.dataset_id}.{view_name}` AS
-            {' UNION ALL '.join(union_queries)}
+    def _create_harmonized_union_view(self, tables, view_name):
+        """Create a union view with harmonized schema across all tables."""
+        if not tables:
+            return
+
+        # Get all unique columns across all tables
+        all_columns = set()
+        table_schemas = {}
+
+        for table in tables:
+            schema_query = f"""
+            SELECT column_name, data_type
+            FROM `{self.project_id}.{self.dataset_id}.INFORMATION_SCHEMA.COLUMNS`
+            WHERE table_name = '{table}'
+            ORDER BY ordinal_position
             """
-
+            
             try:
-                job = self.bq_client.query(create_view)
-                job.result()
-                self.logger.info("✅ Created view: %s", view_name)
+                schema_results = self.bq_client.query(schema_query).result()
+                table_columns = {}
+                for row in schema_results:
+                    all_columns.add(row.column_name)
+                    table_columns[row.column_name] = row.data_type
+                table_schemas[table] = table_columns
             except google_exceptions.GoogleCloudError as e:
-                self.logger.error("Failed to create view %s: %s", view_name, e)
+                self.logger.error("Failed to get schema for %s: %s", table, e)
+                continue
+
+        if not all_columns:
+            self.logger.error("No columns found for union view %s", view_name)
+            return
+
+        # Sort columns for consistent ordering
+        sorted_columns = sorted(all_columns)
+
+        # Build harmonized SELECT statements for each table
+        union_queries = []
+        for table in tables:
+            table_cols = table_schemas.get(table, {})
+            select_parts = []
+            
+            for col in sorted_columns:
+                if col in table_cols:
+                    # Cast all columns to STRING to ensure compatibility
+                    select_parts.append(f"CAST(`{col}` AS STRING) AS `{col}`")
+                else:
+                    # Add NULL as STRING for missing columns
+                    select_parts.append(f"CAST(NULL AS STRING) AS `{col}`")
+            
+            select_statement = f"""
+            SELECT {', '.join(select_parts)}
+            FROM `{self.project_id}.{self.dataset_id}.{table}`
+            """
+            union_queries.append(select_statement)
+
+        # Create the union view
+        create_view = f"""
+        CREATE OR REPLACE VIEW `{self.project_id}.{self.dataset_id}.{view_name}` AS
+        {' UNION ALL '.join(union_queries)}
+        """
+
+        try:
+            job = self.bq_client.query(create_view)
+            job.result()
+            self.logger.info(
+                "✅ Created harmonized view: %s (%d columns, %d tables)",
+                view_name, len(sorted_columns), len(tables)
+            )
+        except google_exceptions.GoogleCloudError as e:
+            self.logger.error("Failed to create view %s: %s", view_name, e)
 
     def generate_final_report(self):
         """Generate migration completion report."""

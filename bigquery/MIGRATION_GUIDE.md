@@ -8,6 +8,7 @@ This is a **one-time migration** to import all historical .mdb files (2002-2024)
 ## Quick Start
 
 ### 1. Prerequisites
+
 ```bash
 # Install mdbtools (Mac)
 brew install mdbtools
@@ -21,6 +22,7 @@ gcloud auth application-default login
 ```
 
 ### 2. Configuration
+
 ```bash
 # Copy environment template
 cp .env.example .env
@@ -31,12 +33,15 @@ cp .env.example .env
 ```
 
 ### 3. Add Your Data
+
 Copy all your .mdb files (2002-2024) to:
-```
+
+```zsh
 bigquery/data/historical/
 ```
 
 Example file names:
+
 - `Legislative_Bills_2002.mdb`
 - `guttmacher_data_2003.mdb`
 - `bills_database_2004.mdb`
@@ -45,12 +50,14 @@ Example file names:
 **Note**: The script automatically extracts the year from filenames containing 4-digit years.
 
 ### 4. Run Migration
+
 ```bash
 # Single command - migrates everything
 python etl/migration_pipeline.py
 ```
 
 You'll see progress like this:
+
 ```
 🔍 Validating migration setup...
 ✅ mdbtools available
@@ -73,17 +80,20 @@ Processing 2002: 100%|██████████| 3/3 [00:05<00:00, 1.85s/it
 
 ## Output
 
-### BigQuery Tables Created:
+### BigQuery Tables Created
+
 - `historical_bills_YYYY` - Bills data for each year
 - `historical_categories_YYYY` - Policy categories for each year
 
-### BigQuery Views Created:
+### BigQuery Views Created
+
 - `all_historical_bills` - All bills from all years combined
 - `all_historical_categories` - All categories from all years combined
 
 ## Connect to Looker Studio
 
 After migration completes:
+
 1. Go to Looker Studio
 2. Create new data source
 3. Select BigQuery
@@ -93,10 +103,12 @@ After migration completes:
 ## Troubleshooting
 
 ### "No .mdb files found"
+
 - Make sure files are in `bigquery/data/historical/`
 - Files should have .mdb extension
 
 ### "mdbtools not found"
+
 ```bash
 # Mac
 brew install mdbtools
@@ -106,10 +118,12 @@ sudo apt-get install mdbtools
 ```
 
 ### "GCP_PROJECT_ID not configured"
+
 - Edit `.env` file
 - Set `GCP_PROJECT_ID=your-actual-project-id`
 
 ### "BigQuery access failed"
+
 ```bash
 gcloud auth application-default login
 ```
