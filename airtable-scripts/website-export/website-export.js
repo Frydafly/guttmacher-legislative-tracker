@@ -91,7 +91,11 @@ class QualityMetrics {
             // Processing metrics
             successfulTransforms: 0,
             failedTransforms: 0,
-            warnings: []
+            warnings: [],
+            
+            // Validation override tracking
+            proceededDespiteCriticalIssues: false,
+            criticalIssuesIgnored: []
         };
     }
     
@@ -152,6 +156,15 @@ class QualityMetrics {
     
     addWarning(warning) {
         this.metrics.warnings.push(warning);
+    }
+    
+    recordCriticalIssuesIgnored(criticalIssues) {
+        this.metrics.proceededDespiteCriticalIssues = true;
+        this.metrics.criticalIssuesIgnored = criticalIssues.map(issue => ({
+            type: issue.type,
+            count: issue.count,
+            impact: issue.impact
+        }));
     }
     
     calculateQualityScore() {
@@ -353,7 +366,37 @@ async function runPreflightValidation() {
         });
     }
     
-    // Check 3: Duplicate bills - using BillID as unique identifier
+    // Check 3: Missing required fields - bills without State, BillType, or BillNumber
+    const missingFieldsCheck = await billsTable.selectRecordsAsync({
+        filterByFormula: `OR(
+            {State} = BLANK(),
+            {BillType} = BLANK(),
+            {BillNumber} = BLANK()
+        )`,
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+    });
+    
+    if (missingFieldsCheck.records.length > 0) {
+        const allMissingFields = missingFieldsCheck.records.map(r => {
+            const missingFields = [];
+            if (!r.getCellValue(CONFIG.FIELDS.STATE)) missingFields.push('State');
+            if (!r.getCellValue(CONFIG.FIELDS.BILL_TYPE)) missingFields.push('BillType');
+            if (!r.getCellValue(CONFIG.FIELDS.BILL_NUMBER)) missingFields.push('BillNumber');
+            
+            return `${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${missingFields.join(', ')}`;
+        });
+        
+        validation.critical.push({
+            type: '📋 Missing Required Fields',
+            count: missingFieldsCheck.records.length,
+            severity: 'CRITICAL',
+            impact: 'Records with missing State, BillType, or BillNumber will fail to export. Fix these specific bills and re-run:',
+            examples: allMissingFields
+        });
+        validation.passed = false;
+    }
+    
+    // Check 4: Duplicate bills - using BillID as unique identifier
     const allBills = await billsTable.selectRecordsAsync({
         fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
     });
@@ -409,10 +452,16 @@ async function runPreflightValidation() {
             ]
         );
         
-        return proceed;
+        return {
+            shouldProceed: proceed,
+            criticalIssuesIgnored: proceed ? validation.critical : null
+        };
     }
     
-    return true;
+    return {
+        shouldProceed: true,
+        criticalIssuesIgnored: null
+    };
 }
 
 /**
@@ -730,6 +779,10 @@ async function saveQualityReport(metrics) {
             'Blurb Fidelity': parseFloat(report.completeness.blurbFidelityPercent) || 100,
             'Date Errors': report.accuracy.dateValidationErrors || 0,
             'States Count': report.coverage.statesCount || 0,
+            'Critical Issues Ignored': this.metrics.proceededDespiteCriticalIssues ? 'YES' : 'NO',
+            'Critical Issues Count': this.metrics.criticalIssuesIgnored.length || 0,
+            'Critical Issues Details': this.metrics.proceededDespiteCriticalIssues ? 
+                JSON.stringify(this.metrics.criticalIssuesIgnored).substring(0, 5000) : '',
             'Recommendations': JSON.stringify(report.recommendations).substring(0, 50000), // Limit size
             'Full Report': JSON.stringify(report, null, 2).substring(0, 100000) // Limit size
         };
@@ -777,7 +830,16 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
     summary.push(`- **Successfully Exported**: ${exportRecords.length}`);
     summary.push(`- **Failed**: ${errors.length}`);
     summary.push(`- **Success Rate**: ${report.summary.successRate}%`);
-    summary.push(`- **Processing Time**: ${report.summary.duration.toFixed(1)} seconds\n`);
+    summary.push(`- **Processing Time**: ${report.summary.duration.toFixed(1)} seconds`);
+    
+    // Show if critical issues were ignored
+    if (metrics.metrics.proceededDespiteCriticalIssues) {
+        summary.push(`\n⚠️ **WARNING**: Export proceeded despite ${metrics.metrics.criticalIssuesIgnored.length} critical validation issue(s):`);
+        metrics.metrics.criticalIssuesIgnored.forEach(issue => {
+            summary.push(`   - ${issue.type}: ${issue.count} records`);
+        });
+    }
+    summary.push('');
     
     // Coverage analysis
     summary.push(`## 🗺️ Coverage Analysis`);
@@ -926,10 +988,15 @@ async function generateWebsiteExport() {
     const metrics = new QualityMetrics();
     
     // Run pre-flight validation
-    const shouldProceed = await runPreflightValidation();
-    if (!shouldProceed) {
+    const validationResult = await runPreflightValidation();
+    if (!validationResult.shouldProceed) {
         output.markdown('\n❌ Export cancelled by user due to validation issues.');
         return;
+    }
+    
+    // Track if critical issues were ignored
+    if (validationResult.criticalIssuesIgnored) {
+        metrics.recordCriticalIssuesIgnored(validationResult.criticalIssuesIgnored);
     }
     
     // Add separator before continuing with export
