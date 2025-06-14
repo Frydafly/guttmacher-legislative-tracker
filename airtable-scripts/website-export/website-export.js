@@ -1,6 +1,12 @@
 // Guttmacher Policy Tracker: Website Export Script
 // Purpose: Full export with real-time validation, quality reports, and change tracking
-// Version: 3.0
+// Version: Enhanced with Smart Validation & GitHub Integration (June 2025)
+// Source: https://github.com/Frydafly/guttmacher-legislative-tracker
+// 
+// This script is version controlled in GitHub. For updates, bug reports, or questions:
+// - Repository: https://github.com/Frydafly/guttmacher-legislative-tracker
+// - Documentation: See README.md in the airtable-scripts/website-export/ directory
+// - Issues: https://github.com/Frydafly/guttmacher-legislative-tracker/issues
 
 // Configuration object for field mapping
 const CONFIG = {
@@ -400,7 +406,10 @@ async function runPreflightValidation() {
             const pattern = missingFields.join(', ');
             missingPatterns.set(pattern, (missingPatterns.get(pattern) || 0) + 1);
             
-            billDetails.push(`${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${pattern}`);
+            // Only show bills that are actually missing critical fields (not empty patterns)
+            if (missingFields.length > 0) {
+                billDetails.push(`${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${pattern}`);
+            }
         });
         
         // Create compact summary table
@@ -520,11 +529,25 @@ function displayValidationResults(validation) {
                         output.markdown(`- ${bill}`);
                     });
                 } else if (issue.allBills && issue.allBills.length > 20) {
-                    output.markdown(`\n**First 10 bills to fix:**`);
-                    issue.allBills.slice(0, 10).forEach(bill => {
-                        output.markdown(`- ${bill}`);
-                    });
-                    output.markdown(`\n*... and ${issue.allBills.length - 10} more bills need attention*`);
+                    // Filter to only show bills missing BillType (the actual critical ones)
+                    const criticalBills = issue.allBills.filter(bill => bill.includes('Missing BillType'));
+                    
+                    if (criticalBills.length > 0) {
+                        output.markdown(`\n**Bills missing critical fields (BillType):**`);
+                        criticalBills.forEach(bill => {
+                            output.markdown(`- ${bill}`);
+                        });
+                        
+                        if (issue.allBills.length > criticalBills.length) {
+                            output.markdown(`\n*Note: ${issue.allBills.length - criticalBills.length} other bills have non-critical missing fields*`);
+                        }
+                    } else {
+                        output.markdown(`\n**First 10 bills to fix:**`);
+                        issue.allBills.slice(0, 10).forEach(bill => {
+                            output.markdown(`- ${bill}`);
+                        });
+                        output.markdown(`\n*... and ${issue.allBills.length - 10} more bills need attention*`);
+                    }
                 }
             } else if (issue.examples && issue.examples.length > 0) {
                 output.markdown(`- Examples:`);
@@ -1030,6 +1053,8 @@ function checkForDuplicates() {
 
 async function generateWebsiteExport() {
     output.markdown('# 🌐 Website Export\n');
+    output.markdown(`**Version:** Enhanced with Smart Validation & GitHub Integration (June 2025)\n`);
+    output.markdown(`**Source:** [GitHub Repository](https://github.com/Frydafly/guttmacher-legislative-tracker)\n`);
     output.markdown(`Export started at ${new Date().toLocaleString()}\n`);
     
     // Initialize quality metrics
@@ -1122,12 +1147,18 @@ async function generateWebsiteExport() {
     const summary = generateEnhancedSummary(exportRecords, errors, metrics);
     output.markdown('\n' + summary);
     
-    // Show completion time
+    // Show completion time with GitHub link
     if (exportSuccessful) {
         output.markdown(`\n**✅ Export completed successfully at ${new Date().toLocaleString()}**`);
     } else {
         output.markdown(`\n**❌ Export failed at ${new Date().toLocaleString()}**`);
     }
+    
+    // Footer with GitHub information
+    output.markdown(`\n---\n`);
+    output.markdown(`💻 **Script Information:** Enhanced with Smart Validation & GitHub Integration | [View Source & Documentation](https://github.com/Frydafly/guttmacher-legislative-tracker/tree/main/airtable-scripts/website-export)`);
+    output.markdown(`📋 **For issues or questions:** [Submit GitHub Issue](https://github.com/Frydafly/guttmacher-legislative-tracker/issues)`);
+    output.markdown(`📖 **Documentation:** [README](https://github.com/Frydafly/guttmacher-legislative-tracker/blob/main/airtable-scripts/website-export/README.md)`);
 }
 
 // Execute the export
