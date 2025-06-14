@@ -33,7 +33,6 @@ const CONFIG = {
     
     // Quality tracking tables
     QUALITY_REPORTS_TABLE: 'Export Quality Reports',
-    EXPORT_HISTORY_TABLE: 'Export History',
     
     // Subpolicies that are no longer supported by the website team
     UNSUPPORTED_SUBPOLICIES: [
@@ -383,69 +382,68 @@ async function runPreflightValidation() {
     });
     
     if (missingFieldsCheck.records.length > 0) {
-        // Create summary of missing field patterns
-        const fieldMissingCounts = { State: 0, BillType: 0, BillNumber: 0 };
-        const missingPatterns = new Map();
-        const billDetails = [];
+        // Separate bills by what they're missing
+        const missingState = [];
+        const missingBillType = [];
+        const missingBillNumber = [];
         
         missingFieldsCheck.records.forEach(r => {
-            const missingFields = [];
-            if (!r.getCellValue(CONFIG.FIELDS.STATE)) {
-                missingFields.push('State');
-                fieldMissingCounts.State++;
-            }
-            if (!r.getCellValue(CONFIG.FIELDS.BILL_TYPE)) {
-                missingFields.push('BillType');
-                fieldMissingCounts.BillType++;
-            }
-            if (!r.getCellValue(CONFIG.FIELDS.BILL_NUMBER)) {
-                missingFields.push('BillNumber');
-                fieldMissingCounts.BillNumber++;
-            }
+            const billId = r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown';
+            const state = r.getCellValue(CONFIG.FIELDS.STATE);
+            const billType = r.getCellValue(CONFIG.FIELDS.BILL_TYPE);
+            const billNumber = r.getCellValue(CONFIG.FIELDS.BILL_NUMBER);
             
-            const pattern = missingFields.join(', ');
-            missingPatterns.set(pattern, (missingPatterns.get(pattern) || 0) + 1);
-            
-            // Only show bills that are actually missing critical fields (not empty patterns)
-            if (missingFields.length > 0) {
-                billDetails.push(`${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${pattern}`);
+            if (!state) {
+                missingState.push(billId);
+            }
+            if (!billType) {
+                missingBillType.push(billId);
+            }
+            if (!billNumber) {
+                missingBillNumber.push(billId);
             }
         });
         
-        // Create compact summary table - only show fields that are actually missing
-        const summaryTable = ['| Field Missing | Count |', '|---------------|-------|'];
+        // Count total critical missing (all three fields are critical for export)
+        const criticalMissingCount = missingState.length + missingBillType.length + missingBillNumber.length;
         
-        // Only show counts for fields that are actually missing
-        if (fieldMissingCounts.State > 0) {
-            summaryTable.push(`| State         | ${fieldMissingCounts.State}     |`);
+        // Build summary table showing only fields that are actually missing
+        const summaryParts = [];
+        if (missingState.length > 0) {
+            summaryParts.push(`**State**: ${missingState.length} bills`);
         }
-        if (fieldMissingCounts.BillType > 0) {
-            summaryTable.push(`| BillType      | ${fieldMissingCounts.BillType}     |`);
+        if (missingBillType.length > 0) {
+            summaryParts.push(`**BillType**: ${missingBillType.length} bills`);
         }
-        if (fieldMissingCounts.BillNumber > 0) {
-            summaryTable.push(`| BillNumber    | ${fieldMissingCounts.BillNumber}     |`);
+        if (missingBillNumber.length > 0) {
+            summaryParts.push(`**BillNumber**: ${missingBillNumber.length} bills`);
         }
         
-        // Only add pattern breakdown if there are meaningful patterns
-        const meaningfulPatterns = Array.from(missingPatterns.entries()).filter(([pattern]) => pattern.length > 0);
-        if (meaningfulPatterns.length > 1) {
-            summaryTable.push('', '| Missing Combination | Bills |', '|-------------------|-------|');
-            meaningfulPatterns.forEach(([pattern, count]) => {
-                summaryTable.push(`| ${pattern} | ${count} |`);
+        // Create specific bills list
+        const specificBills = [];
+        if (missingState.length > 0) {
+            missingState.forEach(billId => {
+                specificBills.push(`${billId}: Missing State`);
             });
         }
-        
-        // Count only the truly critical missing fields (BillType)
-        const criticalMissingCount = fieldMissingCounts.BillType + fieldMissingCounts.BillNumber + fieldMissingCounts.State;
+        if (missingBillType.length > 0) {
+            missingBillType.forEach(billId => {
+                specificBills.push(`${billId}: Missing BillType`);
+            });
+        }
+        if (missingBillNumber.length > 0) {
+            missingBillNumber.forEach(billId => {
+                specificBills.push(`${billId}: Missing BillNumber`);
+            });
+        }
         
         validation.critical.push({
             type: '📋 Missing Required Fields',
             count: criticalMissingCount,
             severity: 'CRITICAL',
-            impact: `${criticalMissingCount} bills missing critical fields will fail to export (${missingFieldsCheck.records.length} total found, but only ${criticalMissingCount} are export-blocking)`,
-            summaryTable: summaryTable.join('\n'),
-            allBills: billDetails,
-            showAllBills: billDetails.length <= 20  // Only show full list if 20 or fewer
+            impact: `${criticalMissingCount} bills missing critical fields will fail to export`,
+            fieldSummary: summaryParts.join(', '),
+            specificBills: specificBills
         });
         validation.passed = false;
     }
@@ -528,35 +526,15 @@ function displayValidationResults(validation) {
             output.markdown(`**${issue.type}**`);
             output.markdown(`- Count: ${issue.count} records`);
             output.markdown(`- Impact: ${issue.impact}`);
-            if (issue.summaryTable) {
-                // Display compact summary table for missing fields
-                output.markdown(`\n${issue.summaryTable}\n`);
+            if (issue.fieldSummary) {
+                // Display missing fields summary
+                output.markdown(`\n**Missing fields breakdown:** ${issue.fieldSummary}`);
                 
-                if (issue.showAllBills && issue.allBills) {
+                if (issue.specificBills) {
                     output.markdown(`\n**Specific bills to fix:**`);
-                    issue.allBills.forEach(bill => {
+                    issue.specificBills.forEach(bill => {
                         output.markdown(`- ${bill}`);
                     });
-                } else if (issue.allBills && issue.allBills.length > 20) {
-                    // Filter to only show bills missing BillType (the actual critical ones)
-                    const criticalBills = issue.allBills.filter(bill => bill.includes('Missing BillType'));
-                    
-                    if (criticalBills.length > 0) {
-                        output.markdown(`\n**Bills missing critical fields (BillType):**`);
-                        criticalBills.forEach(bill => {
-                            output.markdown(`- ${bill}`);
-                        });
-                        
-                        if (issue.allBills.length > criticalBills.length) {
-                            output.markdown(`\n*Note: ${issue.allBills.length - criticalBills.length} other bills have non-critical missing fields*`);
-                        }
-                    } else {
-                        output.markdown(`\n**First 10 bills to fix:**`);
-                        issue.allBills.slice(0, 10).forEach(bill => {
-                            output.markdown(`- ${bill}`);
-                        });
-                        output.markdown(`\n*... and ${issue.allBills.length - 10} more bills need attention*`);
-                    }
                 }
             } else if (issue.examples && issue.examples.length > 0) {
                 output.markdown(`- Examples:`);
