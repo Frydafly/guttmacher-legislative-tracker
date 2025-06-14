@@ -577,15 +577,11 @@ function displayValidationResults(validation) {
  */
 async function processWithProgress(records, metrics) {
     const total = records.length;
-    const updateInterval = Math.max(1, Math.floor(total / 20)); // 5% increments
     
     const exportRecords = [];
     const errors = [];
     
     output.markdown(`\n### 📊 Processing ${total} Bills\n`);
-    
-    // Create progress tracking
-    let lastUpdate = Date.now();
     
     for (let i = 0; i < records.length; i++) {
         const record = records[i];
@@ -1024,7 +1020,7 @@ function getSpecificPolicies(policyField) {
     };
 }
 
-function checkForDuplicates(exportRecords) {
+function checkForDuplicates() {
     // Since we're not exporting BillID, we can't check for duplicates here
     // The duplicate check should happen in the pre-flight validation using the Bills table
     return [];
