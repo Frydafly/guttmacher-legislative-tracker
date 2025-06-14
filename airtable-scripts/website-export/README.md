@@ -96,6 +96,13 @@ Create the **Export Quality Reports** table with these fields:
 - **Accuracy (50%)**: Valid dates and data formats
 - **Consistency (20%)**: No duplicate bills
 
+### Key Changes in v3.0
+
+- **Date Validation**: Now relies entirely on the Date Validation field - no calculations
+- **Duplicate Detection**: Uses BillID as the unique identifier
+- **Quality Reports**: Only saved when export succeeds
+- **Clear Error Messages**: Shows exactly what critical issues were found
+
 ### Grade Scale
 
 - **A+ (95-100%)**: Exceptional quality
@@ -113,13 +120,9 @@ Create the **Export Quality Reports** table with these fields:
 
 ## 🔍 Pre-flight Validation Checks
 
-### Critical Issues (Require Review)
-- **Duplicate Bills**: Same bill appears multiple times
-- **Severely Incomplete Records**: Missing all basic identifiers
-
-### Warnings
-- **Unusual Future Dates**: Non-enacted bills with future dates (>50 bills)
-- **Incomplete Records**: Missing some basic fields
+### Critical Issues (Block Export)
+- **Duplicate BillIDs**: Same BillID appears multiple times in the Bills table
+- **Date Validation Issues**: ANY bill with content in the Date Validation field (future dates)
 
 ### Information
 - **Website Description Status**: Enacted/vetoed bills without blurbs (normal)
@@ -181,8 +184,7 @@ const CONFIG = {
     QUALITY_THRESHOLDS: {
         CRITICAL_SCORE: 50,
         WARNING_SCORE: 70,
-        MAX_MISSING_BLURBS_PERCENT: 90,
-        MAX_DATE_ERRORS: 200
+        MAX_DATE_ERRORS: 0  // ANY date validation error is unacceptable
     }
 };
 ```
@@ -268,8 +270,19 @@ The script provides detailed error information:
 
 #### Quality Report Not Saving
 - **Problem**: Records not appearing in Export Quality Reports table
-- **Solution**: Verify table exists with exact field names and types
-- **Check**: Field types must match (Number vs Text vs Date)
+- **Solution**: Check if export actually succeeded (quality reports only save on success)
+- **Check**: Look for "Export failed - no quality report will be saved" message
+
+#### Export Fails with Field Error
+- **Problem**: "Field 'BillID' does not exist in table 'Website Exports'"
+- **Solution**: BillID is used for duplicate detection but NOT exported
+- **Check**: Ensure Website Exports table doesn't have BillID field
+
+#### Unclear Critical Issues Message
+- **Problem**: Can't tell what critical issues are blocking export
+- **Solution**: Updated in v3.0 - now shows specific issues like:
+  - "❌ Future Date Issues: 23 records"
+  - "❌ Duplicate BillIDs Found: 4 records"
 
 #### Website Blurbs Missing
 - **Problem**: Some blurbs not exporting despite existing in source

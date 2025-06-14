@@ -50,19 +50,12 @@ const CONFIG = {
         "Repeals Ban on D and E Method"
     ],
     
-    // Quality thresholds (adjusted for realistic expectations)
+    // Quality thresholds
     QUALITY_THRESHOLDS: {
-        CRITICAL_SCORE: 50,        // Much lower threshold
-        WARNING_SCORE: 70,         // More realistic warning level
-        MAX_MISSING_BLURBS_PERCENT: 90,  // Most bills won't have blurbs
-        MAX_DATE_ERRORS: 200       // Higher tolerance for date issues
-    },
-    
-    // Fields where future dates are acceptable
-    FUTURE_DATE_OK_FIELDS: [
-        'ENACTED_DATE',            // Future enactment dates are normal
-        'EFFECTIVE_DATE'           // Future effective dates are normal
-    ]
+        CRITICAL_SCORE: 50,        // Below this is critical
+        WARNING_SCORE: 70,         // Below this is warning
+        MAX_DATE_ERRORS: 0         // ANY date validation error is unacceptable
+    }
 };
 
 /**
@@ -272,12 +265,12 @@ class QualityMetrics {
             });
         }
         
-        // Date errors
-        if (this.metrics.dateValidationErrors > CONFIG.QUALITY_THRESHOLDS.MAX_DATE_ERRORS) {
+        // Date errors - ANY date error is critical
+        if (this.metrics.dateValidationErrors > 0) {
             recs.push({
-                priority: 'HIGH',
+                priority: 'CRITICAL',
                 message: `${this.metrics.dateValidationErrors} bills have date validation errors`,
-                action: 'Review and correct future-dated entries'
+                action: 'CRITICAL: Fix all date validation issues before export'
             });
         }
         
@@ -310,29 +303,34 @@ async function runPreflightValidation() {
     const billsTable = base.getTable('Bills');
     
     // Create progress indicator
-    output.markdown('Checking data quality...');
+    output.markdown('Checking data quality...\n');
     
-    // Check 1: Future dates (only flag non-enacted date fields)
-    const futureDateCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `AND(
-            {Date Validation} != '',
-            NOT(FIND('Enacted', {Date Validation}) > 0),
-            NOT(FIND('Effective', {Date Validation}) > 0)
-        )`,
+    // Check 1: Date validation issues - check for records with the 🚫 emoji (which means actual date issues)
+    const dateIssueCheck = await billsTable.selectRecordsAsync({
+        filterByFormula: `FIND('🚫', {Date Validation}) > 0`,
         fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.DATE_VALIDATION, CONFIG.FIELDS.STATE]
     });
     
-    if (futureDateCheck.records.length > 50) {  // Only flag if many bills affected
-        validation.warnings.push({
-            type: '⏰ Unusual Future Dates',
-            count: futureDateCheck.records.length,
-            severity: 'WARNING',
-            impact: 'Some bills have unexpected future dates',
-            examples: futureDateCheck.records.slice(0, 3).map(r => ({
-                bill: r.getCellValue(CONFIG.FIELDS.BILL_ID),
-                issue: r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION)
-            }))
+    if (dateIssueCheck.records.length > 0) {
+        // Filter to only include records that actually have the emoji in the text
+        const actualIssues = dateIssueCheck.records.filter(r => {
+            const val = r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
+            return val && typeof val === 'string' && val.includes('🚫');
         });
+        
+        if (actualIssues.length > 0) {
+            validation.critical.push({
+                type: '🚫 Future Date Issues',
+                count: actualIssues.length,
+                severity: 'CRITICAL',
+                impact: 'Bills have future dates that need to be corrected',
+                examples: actualIssues.slice(0, 10).map(r => ({
+                    bill: r.getCellValue(CONFIG.FIELDS.BILL_ID),
+                    issue: r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION)
+                }))
+            });
+            validation.passed = false;
+        }
     }
     
     // Check 2: Website blurbs (informational only)
@@ -355,59 +353,56 @@ async function runPreflightValidation() {
         });
     }
     
-    // Check 3: Duplicate bills
+    // Check 3: Duplicate bills - using BillID as unique identifier
     const allBills = await billsTable.selectRecordsAsync({
-        fields: [CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
     });
     
-    const billMap = new Map();
-    const duplicates = [];
+    const billIdMap = new Map();
+    const duplicateBillIds = [];
     
     allBills.records.forEach(record => {
-        const key = `${record.getCellValue(CONFIG.FIELDS.STATE)?.name}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER)}`;
-        if (billMap.has(key)) {
-            duplicates.push(key);
-        } else {
-            billMap.set(key, record.id);
+        const billId = record.getCellValue(CONFIG.FIELDS.BILL_ID);
+        if (billId) {
+            if (billIdMap.has(billId)) {
+                duplicateBillIds.push({
+                    billId: billId,
+                    descriptor: `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || 'Unknown'}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`
+                });
+            } else {
+                billIdMap.set(billId, record.id);
+            }
         }
     });
     
-    if (duplicates.length > 0) {
+    if (duplicateBillIds.length > 0) {
         validation.critical.push({
-            type: '🔁 Duplicate Bills Found',
-            count: duplicates.length,
+            type: '🔁 Duplicate BillIDs Found',
+            count: duplicateBillIds.length,
             severity: 'CRITICAL',
             impact: 'Only first instance will be exported',
-            examples: duplicates.slice(0, 5)
+            examples: duplicateBillIds.slice(0, 5).map(d => `${d.billId} (${d.descriptor})`)
         });
-    }
-    
-    // Check 4: Severely incomplete data (only truly broken records)
-    const incompleteCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `AND(
-            {State} = BLANK(),
-            {BillType} = BLANK(),
-            {BillNumber} = BLANK()
-        )`,  // Only flag if ALL core fields are missing
-        fields: [CONFIG.FIELDS.BILL_ID]
-    });
-    
-    if (incompleteCheck.records.length > 0) {
-        validation.warnings.push({
-            type: '⚠️ Severely Incomplete Records',
-            count: incompleteCheck.records.length,
-            severity: 'WARNING',
-            impact: 'These records are missing all basic identifiers'
-        });
+        validation.passed = false;
     }
     
     // Display validation results
     displayValidationResults(validation);
     
-    // Ask user to proceed if issues found
+    // Ask user to proceed if critical issues found
     if (!validation.passed) {
+        // Build a clear message about what critical issues were found
+        let criticalMessage = '🚨 CRITICAL ISSUES FOUND:\n\n';
+        
+        validation.critical.forEach(issue => {
+            criticalMessage += `❌ ${issue.type}: ${issue.count} ${issue.count === 1 ? 'record' : 'records'}\n`;
+            criticalMessage += `   Impact: ${issue.impact}\n\n`;
+        });
+        
+        criticalMessage += 'Do you want to continue with the export despite these critical issues?';
+        
         const proceed = await input.buttonsAsync(
-            '⚠️ Critical validation issues found. Continue with export?',
+            criticalMessage,
             [
                 {label: '✅ Continue Anyway', value: true, variant: 'danger'},
                 {label: '❌ Cancel Export', value: false}
@@ -540,26 +535,7 @@ async function processWithProgress(records, metrics) {
             });
         }
         
-        // Update progress at intervals or if 1 second has passed
-        if (i % updateInterval === 0 || Date.now() - lastUpdate > 1000 || i === records.length - 1) {
-            const progress = Math.round((i + 1) / total * 100);
-            const processed = i + 1;
-            const successful = exportRecords.length;
-            const failed = errors.length;
-            
-            output.clear();
-            output.markdown(`### 📊 Processing ${total} Bills\n`);
-            output.markdown(`**Progress:** ${progress}% (${processed}/${total})`);
-            output.markdown(`✅ Successful: ${successful} | ❌ Failed: ${failed}`);
-            
-            // Add progress bar
-            const barLength = 20;
-            const filled = Math.round(barLength * progress / 100);
-            const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
-            output.markdown(`\n[${bar}]`);
-            
-            lastUpdate = Date.now();
-        }
+        // We'll show progress summary at the end instead of clearing output
     }
     
     return { exportRecords, errors };
@@ -935,23 +911,9 @@ function getSpecificPolicies(policyField) {
 }
 
 function checkForDuplicates(exportRecords) {
-    const seenBills = new Map();
-    const duplicates = [];
-    
-    exportRecords.forEach((record, index) => {
-        const billKey = `${record.fields.State}-${record.fields.BillType}${record.fields.BillNumber}`;
-        
-        if (seenBills.has(billKey)) {
-            duplicates.push({
-                billKey,
-                indexes: [seenBills.get(billKey), index]
-            });
-        } else {
-            seenBills.set(billKey, index);
-        }
-    });
-    
-    return duplicates;
+    // Since we're not exporting BillID, we can't check for duplicates here
+    // The duplicate check should happen in the pre-flight validation using the Bills table
+    return [];
 }
 
 // ===== MAIN EXPORT FUNCTION =====
@@ -969,6 +931,10 @@ async function generateWebsiteExport() {
         output.markdown('\n❌ Export cancelled by user due to validation issues.');
         return;
     }
+    
+    // Add separator before continuing with export
+    output.markdown('\n---\n');
+    output.markdown('## 📦 Starting Export Process\n');
     
     // Get tables
     const billsTable = base.getTable('Bills');
@@ -1002,26 +968,14 @@ async function generateWebsiteExport() {
     // Process bills with progress tracking
     const { exportRecords, errors } = await processWithProgress(records.records, metrics);
     
-    // Check for duplicates
-    const duplicates = checkForDuplicates(exportRecords);
-    if (duplicates.length > 0) {
-        metrics.metrics.duplicateBills = duplicates.length;
-        output.markdown(`\n⚠️ Found ${duplicates.length} duplicate bills, keeping first occurrence of each\n`);
-        
-        // Remove duplicates
-        duplicates.forEach(dupe => {
-            dupe.indexes.slice(1).forEach(indexToRemove => {
-                exportRecords[indexToRemove] = null;
-            });
-        });
-        
-        // Filter out nulls
-        const filteredRecords = exportRecords.filter(r => r !== null);
-        exportRecords.length = 0;
-        exportRecords.push(...filteredRecords);
-    }
+    // Show processing summary
+    output.markdown(`\n✅ Processing complete: ${exportRecords.length} successful, ${errors.length} failed\n`);
+    
+    // Duplicate checking is now done in pre-flight validation using BillIDs from the Bills table
     
     // Create export records
+    let exportSuccessful = false;
+    
     if (exportRecords.length > 0) {
         output.markdown('\n### 💾 Creating Export Records\n');
         try {
@@ -1034,23 +988,31 @@ async function generateWebsiteExport() {
             }
             
             output.markdown(`\n✅ Successfully created ${exportRecords.length} export records`);
+            exportSuccessful = true;
             
         } catch (error) {
             output.markdown(`\n❌ Error creating export records: ${error.message}`);
+            output.markdown(`\n⚠️ Export failed - no quality report will be saved`);
         }
     } else {
         output.markdown('\n⚠️ No records to export');
     }
     
-    // Save quality report
-    await saveQualityReport(metrics);
+    // Only save quality report if export was successful
+    if (exportSuccessful) {
+        await saveQualityReport(metrics);
+    }
     
     // Generate and display enhanced summary
     const summary = generateEnhancedSummary(exportRecords, errors, metrics);
     output.markdown('\n' + summary);
     
     // Show completion time
-    output.markdown(`\n**Export completed at ${new Date().toLocaleString()}**`);
+    if (exportSuccessful) {
+        output.markdown(`\n**✅ Export completed successfully at ${new Date().toLocaleString()}**`);
+    } else {
+        output.markdown(`\n**❌ Export failed at ${new Date().toLocaleString()}**`);
+    }
 }
 
 // Execute the export
