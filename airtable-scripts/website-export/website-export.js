@@ -377,21 +377,57 @@ async function runPreflightValidation() {
     });
     
     if (missingFieldsCheck.records.length > 0) {
-        const allMissingFields = missingFieldsCheck.records.map(r => {
+        // Create summary of missing field patterns
+        const fieldMissingCounts = { State: 0, BillType: 0, BillNumber: 0 };
+        const missingPatterns = new Map();
+        const billDetails = [];
+        
+        missingFieldsCheck.records.forEach(r => {
             const missingFields = [];
-            if (!r.getCellValue(CONFIG.FIELDS.STATE)) missingFields.push('State');
-            if (!r.getCellValue(CONFIG.FIELDS.BILL_TYPE)) missingFields.push('BillType');
-            if (!r.getCellValue(CONFIG.FIELDS.BILL_NUMBER)) missingFields.push('BillNumber');
+            if (!r.getCellValue(CONFIG.FIELDS.STATE)) {
+                missingFields.push('State');
+                fieldMissingCounts.State++;
+            }
+            if (!r.getCellValue(CONFIG.FIELDS.BILL_TYPE)) {
+                missingFields.push('BillType');
+                fieldMissingCounts.BillType++;
+            }
+            if (!r.getCellValue(CONFIG.FIELDS.BILL_NUMBER)) {
+                missingFields.push('BillNumber');
+                fieldMissingCounts.BillNumber++;
+            }
             
-            return `${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${missingFields.join(', ')}`;
+            const pattern = missingFields.join(', ');
+            missingPatterns.set(pattern, (missingPatterns.get(pattern) || 0) + 1);
+            
+            billDetails.push(`${r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown'}: Missing ${pattern}`);
         });
+        
+        // Create compact summary table
+        const summaryTable = [
+            '| Missing Field | Count |',
+            '|---------------|-------|',
+            `| State         | ${fieldMissingCounts.State}     |`,
+            `| BillType      | ${fieldMissingCounts.BillType}     |`,
+            `| BillNumber    | ${fieldMissingCounts.BillNumber}     |`,
+            '',
+            '| Missing Combination | Bills |',
+            '|-------------------|-------|'
+        ];
+        
+        // Add pattern breakdown
+        for (const [pattern, count] of missingPatterns.entries()) {
+            summaryTable.push(`| ${pattern} | ${count} |`);
+        }
         
         validation.critical.push({
             type: '📋 Missing Required Fields',
             count: missingFieldsCheck.records.length,
             severity: 'CRITICAL',
-            impact: 'Records with missing State, BillType, or BillNumber will fail to export. Fix these specific bills and re-run:',
-            examples: allMissingFields
+            impact: 'Records with missing State, BillType, or BillNumber will fail to export',
+            summaryTable: summaryTable.join('\n'),
+            allBills: billDetails,
+            showAllBills: billDetails.length <= 20  // Only show full list if 20 or fewer
         });
         validation.passed = false;
     }
@@ -474,7 +510,23 @@ function displayValidationResults(validation) {
             output.markdown(`**${issue.type}**`);
             output.markdown(`- Count: ${issue.count} records`);
             output.markdown(`- Impact: ${issue.impact}`);
-            if (issue.examples && issue.examples.length > 0) {
+            if (issue.summaryTable) {
+                // Display compact summary table for missing fields
+                output.markdown(`\n${issue.summaryTable}\n`);
+                
+                if (issue.showAllBills && issue.allBills) {
+                    output.markdown(`\n**Specific bills to fix:**`);
+                    issue.allBills.forEach(bill => {
+                        output.markdown(`- ${bill}`);
+                    });
+                } else if (issue.allBills && issue.allBills.length > 20) {
+                    output.markdown(`\n**First 10 bills to fix:**`);
+                    issue.allBills.slice(0, 10).forEach(bill => {
+                        output.markdown(`- ${bill}`);
+                    });
+                    output.markdown(`\n*... and ${issue.allBills.length - 10} more bills need attention*`);
+                }
+            } else if (issue.examples && issue.examples.length > 0) {
                 output.markdown(`- Examples:`);
                 issue.examples.forEach(ex => {
                     if (typeof ex === 'string') {
