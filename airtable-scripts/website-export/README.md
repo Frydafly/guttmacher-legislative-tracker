@@ -96,12 +96,15 @@ Create the **Export Quality Reports** table with these fields:
 - **Accuracy (50%)**: Valid dates and data formats
 - **Consistency (20%)**: No duplicate bills
 
-### Key Changes in v3.0
+### Key Changes in Enhanced Version (June 2025)
 
-- **Date Validation**: Now relies entirely on the Date Validation field - no calculations
+- **Smart Missing Fields Display**: Compact summary tables instead of overwhelming lists
+- **GitHub Integration**: Links to repository, documentation, and issue tracking in reports
+- **Enhanced Validation Messages**: Shows specific critical bills that need fixing (e.g., only MO bills missing BillType)
+- **Date Validation**: Uses emoji-based Date Validation field - no custom calculations
 - **Duplicate Detection**: Uses BillID as the unique identifier
 - **Quality Reports**: Only saved when export succeeds
-- **Clear Error Messages**: Shows exactly what critical issues were found
+- **Override Tracking**: Records when critical issues are ignored and proceeding anyway
 
 ### Grade Scale
 
@@ -122,7 +125,8 @@ Create the **Export Quality Reports** table with these fields:
 
 ### Critical Issues (Block Export)
 - **Duplicate BillIDs**: Same BillID appears multiple times in the Bills table
-- **Date Validation Issues**: ANY bill with content in the Date Validation field (future dates)
+- **Date Validation Issues**: ANY bill with 🚫 emoji in the Date Validation field (future dates)
+- **Missing Required Fields**: Bills without State, BillType, or BillNumber (shows smart summary)
 
 ### Information
 - **Website Description Status**: Enacted/vetoed bills without blurbs (normal)
@@ -278,9 +282,19 @@ The script provides detailed error information:
 - **Solution**: BillID is used for duplicate detection but NOT exported
 - **Check**: Ensure Website Exports table doesn't have BillID field
 
+#### Missing Fields Display Too Overwhelming
+- **Problem**: Too many bills listed when showing missing field validation
+- **Solution**: Enhanced version uses smart display:
+  - Compact summary tables showing field counts
+  - Only shows critical bills (e.g., missing BillType) 
+  - Hides non-critical missing field patterns
+  - ≤20 bills: Shows all specific bills
+  - >20 bills: Shows critical ones + count of others
+
 #### Unclear Critical Issues Message
 - **Problem**: Can't tell what critical issues are blocking export
-- **Solution**: Updated in v3.0 - now shows specific issues like:
+- **Solution**: Enhanced version shows specific issues like:
+  - "❌ Missing Required Fields: 2 records"
   - "❌ Future Date Issues: 23 records"
   - "❌ Duplicate BillIDs Found: 4 records"
 
@@ -404,7 +418,8 @@ if (Date.now() - lastUpdate > 500) { // Update every 500ms
 
 ## 📝 Version History
 
-- **v3.0** (Current): Enhanced version with quality monitoring, blurb fidelity tracking, and automated reporting
+- **Enhanced Version (June 2025)** (Current): Smart validation display, GitHub integration, enhanced critical issue detection
+- **v3.0**: Enhanced version with quality monitoring, blurb fidelity tracking, and automated reporting
 - **v2.3**: Fixed rich text blurb extraction issue  
 - **v2.2**: Added intent value flags for website
 - **v2.1**: Removed access policy mapping
@@ -414,4 +429,4 @@ if (Date.now() - lastUpdate > 500) { // Update every 500ms
 ---
 
 *Enhanced Website Export Script - Ensuring Data Quality and Integrity*  
-*Last updated: January 2025*
+*Last updated: June 2025*

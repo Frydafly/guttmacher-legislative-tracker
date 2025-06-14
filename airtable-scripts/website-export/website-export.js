@@ -412,28 +412,37 @@ async function runPreflightValidation() {
             }
         });
         
-        // Create compact summary table
-        const summaryTable = [
-            '| Missing Field | Count |',
-            '|---------------|-------|',
-            `| State         | ${fieldMissingCounts.State}     |`,
-            `| BillType      | ${fieldMissingCounts.BillType}     |`,
-            `| BillNumber    | ${fieldMissingCounts.BillNumber}     |`,
-            '',
-            '| Missing Combination | Bills |',
-            '|-------------------|-------|'
-        ];
+        // Create compact summary table - only show fields that are actually missing
+        const summaryTable = ['| Field Missing | Count |', '|---------------|-------|'];
         
-        // Add pattern breakdown
-        for (const [pattern, count] of missingPatterns.entries()) {
-            summaryTable.push(`| ${pattern} | ${count} |`);
+        // Only show counts for fields that are actually missing
+        if (fieldMissingCounts.State > 0) {
+            summaryTable.push(`| State         | ${fieldMissingCounts.State}     |`);
         }
+        if (fieldMissingCounts.BillType > 0) {
+            summaryTable.push(`| BillType      | ${fieldMissingCounts.BillType}     |`);
+        }
+        if (fieldMissingCounts.BillNumber > 0) {
+            summaryTable.push(`| BillNumber    | ${fieldMissingCounts.BillNumber}     |`);
+        }
+        
+        // Only add pattern breakdown if there are meaningful patterns
+        const meaningfulPatterns = Array.from(missingPatterns.entries()).filter(([pattern]) => pattern.length > 0);
+        if (meaningfulPatterns.length > 1) {
+            summaryTable.push('', '| Missing Combination | Bills |', '|-------------------|-------|');
+            meaningfulPatterns.forEach(([pattern, count]) => {
+                summaryTable.push(`| ${pattern} | ${count} |`);
+            });
+        }
+        
+        // Count only the truly critical missing fields (BillType)
+        const criticalMissingCount = fieldMissingCounts.BillType + fieldMissingCounts.BillNumber + fieldMissingCounts.State;
         
         validation.critical.push({
             type: '📋 Missing Required Fields',
-            count: missingFieldsCheck.records.length,
+            count: criticalMissingCount,
             severity: 'CRITICAL',
-            impact: 'Records with missing State, BillType, or BillNumber will fail to export',
+            impact: `${criticalMissingCount} bills missing critical fields will fail to export (${missingFieldsCheck.records.length} total found, but only ${criticalMissingCount} are export-blocking)`,
             summaryTable: summaryTable.join('\n'),
             allBills: billDetails,
             showAllBills: billDetails.length <= 20  // Only show full list if 20 or fewer
@@ -850,10 +859,10 @@ async function saveQualityReport(metrics) {
             'Blurb Fidelity': parseFloat(report.completeness.blurbFidelityPercent) || 100,
             'Date Errors': report.accuracy.dateValidationErrors || 0,
             'States Count': report.coverage.statesCount || 0,
-            'Critical Issues Ignored': this.metrics.proceededDespiteCriticalIssues ? 'YES' : 'NO',
-            'Critical Issues Count': this.metrics.criticalIssuesIgnored.length || 0,
-            'Critical Issues Details': this.metrics.proceededDespiteCriticalIssues ? 
-                JSON.stringify(this.metrics.criticalIssuesIgnored).substring(0, 5000) : '',
+            'Critical Issues Ignored': metrics.metrics.proceededDespiteCriticalIssues ? 'YES' : 'NO',
+            'Critical Issues Count': metrics.metrics.criticalIssuesIgnored.length || 0,
+            'Critical Issues Details': metrics.metrics.proceededDespiteCriticalIssues ? 
+                JSON.stringify(metrics.metrics.criticalIssuesIgnored).substring(0, 5000) : '',
             'Recommendations': JSON.stringify(report.recommendations).substring(0, 50000), // Limit size
             'Full Report': JSON.stringify(report, null, 2).substring(0, 100000) // Limit size
         };
@@ -872,7 +881,7 @@ async function saveQualityReport(metrics) {
         output.markdown(`\n📋 Required table structure:`);
         output.markdown(`   Table name: "${CONFIG.QUALITY_REPORTS_TABLE}"`);
         output.markdown(`   Fields needed: Export Date (Date), Quality Score (Number), Grade (Text), etc.`);
-        output.markdown(`   See README-ENHANCED.md for complete field specifications`);
+        output.markdown(`   See README.md for complete field specifications`);
     }
 }
 

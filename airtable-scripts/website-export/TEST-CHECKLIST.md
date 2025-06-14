@@ -9,11 +9,11 @@ This checklist ensures critical functionality remains intact. Any failure = DO N
 ## 1. ✅ Pre-flight Validation Tests
 
 ### Test 1.1: Date Validation Field Check
-**CRITICAL**: The script MUST use the Date Validation field, not calculate dates itself
-- [ ] Verify script checks `{Date Validation} != ''` 
-- [ ] Confirm ANY record with Date Validation content = CRITICAL error
+**CRITICAL**: The script MUST use the Date Validation field emoji, not calculate dates itself
+- [ ] Verify script checks `FIND('🚫', {Date Validation}) > 0`
+- [ ] Confirm ANY record with 🚫 emoji in Date Validation = CRITICAL error
 - [ ] Ensure NO date calculations in the script
-- [ ] Test with a bill that has future dates - should block export
+- [ ] Test with a bill that has 🚫 emoji - should block export
 
 ### Test 1.2: Duplicate BillID Detection  
 **CRITICAL**: Must use BillID as unique identifier
@@ -21,6 +21,13 @@ This checklist ensures critical functionality remains intact. Any failure = DO N
 - [ ] Confirm duplicates are detected in Bills table, NOT Website Exports
 - [ ] Test with duplicate BillIDs - should show critical error
 - [ ] Ensure BillID is NOT included in export records
+
+### Test 1.3: Missing Required Fields Display
+**CRITICAL**: Must show smart summary instead of overwhelming lists
+- [ ] Verify missing fields show compact summary tables
+- [ ] Confirm ≤20 bills: shows all specific bills to fix
+- [ ] Confirm >20 bills: shows only critical ones (e.g., missing BillType)
+- [ ] Test that non-critical missing field patterns are summarized, not listed
 
 ---
 
@@ -66,7 +73,7 @@ This checklist ensures critical functionality remains intact. Any failure = DO N
 ### Test 4.1: Date Error Tolerance = 0
 **CRITICAL**: ANY date error must be flagged
 - [ ] Verify MAX_DATE_ERRORS = 0 in config
-- [ ] Test with 1 date error - should show critical recommendation
+- [ ] Test with 1 🚫 emoji in Date Validation - should show critical error
 - [ ] Confirm no "tolerance" for date issues
 
 ### Test 4.2: No Blurb Requirements
@@ -103,7 +110,7 @@ Run this before ANY code changes:
 
 2. **Test Data Setup**
    - Create test bill with:
-     - Future date in Introduction Date
+     - 🚫 emoji in Date Validation field
      - Website blurb with "TEST BLURB CONTENT"
      - All required fields filled
 
@@ -123,9 +130,9 @@ Run this before ANY code changes:
 ## 7. 🚫 DO NOT CHANGE These Critical Elements
 
 1. **Date Validation Logic**
-   - MUST use Date Validation field
+   - MUST use Date Validation field with 🚫 emoji check
    - NO custom date calculations
-   - ANY content in field = error
+   - ANY 🚫 emoji in field = error
 
 2. **Duplicate Detection**
    - MUST use BillID field
@@ -195,4 +202,21 @@ If tests fail after changes:
 
 **Remember**: When in doubt, DON'T change it. The script works as-is for critical operations.
 
-Last verified working: January 2025
+Last verified working: June 2025
+
+## 11. 🚨 GitHub Integration Tests
+
+### Test 11.1: Version Display
+**CRITICAL**: Must show meaningful version information in reports
+- [ ] Verify header shows "Enhanced with Smart Validation & GitHub Integration (June 2025)"
+- [ ] Confirm GitHub repository link appears in report header
+- [ ] Check footer contains all GitHub links (repository, issues, documentation)
+
+### Test 11.2: Link Functionality
+- [ ] Verify all GitHub links are clickable in Airtable output
+- [ ] Test that links point to correct repository URLs
+- [ ] Confirm documentation links work
+
+---
+
+**Remember**: The enhanced version should show meaningful version info and GitHub integration, not meaningless "v3.0"
