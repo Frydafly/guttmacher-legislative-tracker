@@ -123,10 +123,12 @@ Create the **Export Quality Reports** table with these fields:
 
 ## 🔍 Pre-flight Validation Checks
 
-### Critical Issues (Block Export)
+### Critical Issues
 - **Duplicate BillIDs**: Same BillID appears multiple times in the Bills table
 - **Date Validation Issues**: ANY bill with 🚫 emoji in the Date Validation field (future dates)
 - **Missing Required Fields**: Bills without State, BillType, or BillNumber (shows smart summary)
+
+**Note**: The export will only prompt for confirmation when there are actual critical issues (count > 0). If all validation checks pass or show 0 issues, the export proceeds automatically without interruption.
 
 ### Information
 - **Website Description Status**: Enacted/vetoed bills without blurbs (normal)
@@ -298,6 +300,11 @@ The script provides detailed error information:
   - "❌ Future Date Issues: 23 records"
   - "❌ Duplicate BillIDs Found: 4 records"
 
+#### Confusing "0 Critical Issues" Display
+- **Problem**: Export shows "Critical Issues" section even when count is 0
+- **Solution**: Updated to only display critical issues section when there are actual issues (count > 0)
+- **Behavior**: Export now proceeds automatically without prompts when no critical issues exist
+
 #### Website Blurbs Missing
 - **Problem**: Some blurbs not exporting despite existing in source
 - **Solution**: Check Blurb Fidelity metrics in quality report
@@ -416,17 +423,14 @@ if (Date.now() - lastUpdate > 500) { // Update every 500ms
 **Quality Questions**: Review Export Quality Reports table  
 **Script Updates**: Check this repository for latest version
 
-## 📝 Version History
+## 📝 Recent Updates
 
-- **Enhanced Version (June 2025)** (Current): Smart validation display, GitHub integration, enhanced critical issue detection
-- **v3.0**: Enhanced version with quality monitoring, blurb fidelity tracking, and automated reporting
-- **v2.3**: Fixed rich text blurb extraction issue  
-- **v2.2**: Added intent value flags for website
-- **v2.1**: Removed access policy mapping
-- **v2.0**: Complete rewrite with validation
-- **v1.0**: Initial export functionality
+**June 2025**: Fixed confusing validation display
+- Export no longer shows "Critical Issues" section when there are 0 issues
+- Export proceeds automatically without prompts when validation passes
+- Cleaner, less confusing user experience
 
 ---
 
-*Enhanced Website Export Script - Ensuring Data Quality and Integrity*  
+*Enhanced Website Export Script - Ensuring Data Quality and Integrity*
 *Last updated: June 2025*

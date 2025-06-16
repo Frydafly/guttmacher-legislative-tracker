@@ -307,6 +307,10 @@ class QualityMetrics {
 
 /**
  * Pre-flight validation with detailed reporting
+ * 
+ * Note: This function only adds issues to the critical array when there are actual problems.
+ * If all checks pass (e.g., 0 missing fields), no critical issues are displayed and the
+ * export proceeds automatically without user prompts.
  */
 async function runPreflightValidation() {
     output.markdown('## 🔍 Pre-flight Validation\n');
