@@ -407,45 +407,48 @@ async function runPreflightValidation() {
         // Count total critical missing (all three fields are critical for export)
         const criticalMissingCount = missingState.length + missingBillType.length + missingBillNumber.length;
         
-        // Build summary table showing only fields that are actually missing
-        const summaryParts = [];
-        if (missingState.length > 0) {
-            summaryParts.push(`**State**: ${missingState.length} bills`);
-        }
-        if (missingBillType.length > 0) {
-            summaryParts.push(`**BillType**: ${missingBillType.length} bills`);
-        }
-        if (missingBillNumber.length > 0) {
-            summaryParts.push(`**BillNumber**: ${missingBillNumber.length} bills`);
-        }
-        
-        // Create specific bills list
-        const specificBills = [];
-        if (missingState.length > 0) {
-            missingState.forEach(billId => {
-                specificBills.push(`${billId}: Missing State`);
+        // Only add to critical issues if we actually found missing fields
+        if (criticalMissingCount > 0) {
+            // Build summary table showing only fields that are actually missing
+            const summaryParts = [];
+            if (missingState.length > 0) {
+                summaryParts.push(`**State**: ${missingState.length} bills`);
+            }
+            if (missingBillType.length > 0) {
+                summaryParts.push(`**BillType**: ${missingBillType.length} bills`);
+            }
+            if (missingBillNumber.length > 0) {
+                summaryParts.push(`**BillNumber**: ${missingBillNumber.length} bills`);
+            }
+            
+            // Create specific bills list
+            const specificBills = [];
+            if (missingState.length > 0) {
+                missingState.forEach(billId => {
+                    specificBills.push(`${billId}: Missing State`);
+                });
+            }
+            if (missingBillType.length > 0) {
+                missingBillType.forEach(billId => {
+                    specificBills.push(`${billId}: Missing BillType`);
+                });
+            }
+            if (missingBillNumber.length > 0) {
+                missingBillNumber.forEach(billId => {
+                    specificBills.push(`${billId}: Missing BillNumber`);
+                });
+            }
+            
+            validation.critical.push({
+                type: '📋 Missing Required Fields',
+                count: criticalMissingCount,
+                severity: 'CRITICAL',
+                impact: `${criticalMissingCount} bills missing critical fields will fail to export`,
+                fieldSummary: summaryParts.join(', '),
+                specificBills: specificBills
             });
+            validation.passed = false;
         }
-        if (missingBillType.length > 0) {
-            missingBillType.forEach(billId => {
-                specificBills.push(`${billId}: Missing BillType`);
-            });
-        }
-        if (missingBillNumber.length > 0) {
-            missingBillNumber.forEach(billId => {
-                specificBills.push(`${billId}: Missing BillNumber`);
-            });
-        }
-        
-        validation.critical.push({
-            type: '📋 Missing Required Fields',
-            count: criticalMissingCount,
-            severity: 'CRITICAL',
-            impact: `${criticalMissingCount} bills missing critical fields will fail to export`,
-            fieldSummary: summaryParts.join(', '),
-            specificBills: specificBills
-        });
-        validation.passed = false;
     }
     
     // Check 4: Duplicate bills - using BillID as unique identifier
@@ -520,33 +523,37 @@ async function runPreflightValidation() {
  * Display validation results in a formatted way
  */
 function displayValidationResults(validation) {
-    if (validation.critical.length > 0) {
+    // Only show critical issues section if there are actual critical issues
+    if (validation.critical.length > 0 && validation.critical.some(issue => issue.count > 0)) {
         output.markdown('### ❌ Critical Issues\n');
         validation.critical.forEach(issue => {
-            output.markdown(`**${issue.type}**`);
-            output.markdown(`- Count: ${issue.count} records`);
-            output.markdown(`- Impact: ${issue.impact}`);
-            if (issue.fieldSummary) {
-                // Display missing fields summary
-                output.markdown(`\n**Missing fields breakdown:** ${issue.fieldSummary}`);
-                
-                if (issue.specificBills) {
-                    output.markdown(`\n**Specific bills to fix:**`);
-                    issue.specificBills.forEach(bill => {
-                        output.markdown(`- ${bill}`);
+            // Only display issues that have a count > 0
+            if (issue.count > 0) {
+                output.markdown(`**${issue.type}**`);
+                output.markdown(`- Count: ${issue.count} records`);
+                output.markdown(`- Impact: ${issue.impact}`);
+                if (issue.fieldSummary) {
+                    // Display missing fields summary
+                    output.markdown(`\n**Missing fields breakdown:** ${issue.fieldSummary}`);
+                    
+                    if (issue.specificBills) {
+                        output.markdown(`\n**Specific bills to fix:**`);
+                        issue.specificBills.forEach(bill => {
+                            output.markdown(`- ${bill}`);
+                        });
+                    }
+                } else if (issue.examples && issue.examples.length > 0) {
+                    output.markdown(`- Examples:`);
+                    issue.examples.forEach(ex => {
+                        if (typeof ex === 'string') {
+                            output.markdown(`  - ${ex}`);
+                        } else {
+                            output.markdown(`  - ${ex.bill}: ${ex.issue}`);
+                        }
                     });
                 }
-            } else if (issue.examples && issue.examples.length > 0) {
-                output.markdown(`- Examples:`);
-                issue.examples.forEach(ex => {
-                    if (typeof ex === 'string') {
-                        output.markdown(`  - ${ex}`);
-                    } else {
-                        output.markdown(`  - ${ex.bill}: ${ex.issue}`);
-                    }
-                });
+                output.markdown('');
             }
-            output.markdown('');
         });
     }
     
@@ -573,12 +580,16 @@ function displayValidationResults(validation) {
         });
     }
     
-    if (validation.critical.length === 0 && validation.warnings.length === 0) {
+    // Show success message when there are no actual critical issues
+    const hasActualCriticalIssues = validation.critical.length > 0 && 
+        validation.critical.some(issue => issue.count > 0);
+    
+    if (!hasActualCriticalIssues && validation.warnings.length === 0) {
         output.markdown('### ✅ All Validation Checks Passed\n');
         output.markdown('No critical issues or warnings found. Ready to export!');
-    } else if (validation.critical.length === 0) {
+    } else if (!hasActualCriticalIssues) {
         output.markdown('### ✅ Ready to Export\n');
-        output.markdown('No critical issues found. Warnings and info items noted above.');
+        output.markdown('No critical issues found. Export can proceed without interruption.');
     }
 }
 
