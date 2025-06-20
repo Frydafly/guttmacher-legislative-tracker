@@ -1,26 +1,26 @@
 # Guttmacher Legislative Tracker - BigQuery Migration
 
-A simple one-time migration pipeline to extract historical legislative data from Access (.mdb) files and load it into BigQuery for Looker Studio analysis.
+Complete migration pipeline for 20+ years (2005-2024) of legislative tracking data with schema harmonization and Looker Studio optimization.
 
 ## 🎯 What This Does
 
-1. **Extracts** data from historical Access .mdb files (2002-2024)
-2. **Cleans** and standardizes the data for BigQuery
-3. **Loads** data directly to BigQuery tables
-4. **Creates** union views combining all years
-5. **Verifies** data was successfully loaded
+1. **Migrates** historical .mdb/.accdb files (2005-2024) to BigQuery
+2. **Harmonizes** varying database schemas using field mapping configuration  
+3. **Creates** comprehensive Looker Studio table optimized for analysis
+4. **Validates** migration success with built-in testing
 
 ## 📁 Project Structure
 
 ```
 bigquery/
-├── data/                       # Your .mdb files (2002-2024)
-├── migration_pipeline.py       # Single migration script
-├── looker_studio_views.sql     # Optional dashboard views
-├── requirements.txt            # Python dependencies
-├── MIGRATION_GUIDE.md          # Step-by-step instructions
-├── .env                        # Your GCP configuration
-└── migration.log               # Migration history
+├── data/                    # Your database files (2005-2024)
+│   ├── *.mdb               # Legacy Access databases (2005-2019)
+│   └── *.accdb             # Modern Access databases (2020-2024)
+├── migrate.py              # Single migration script (everything!)
+├── field_mappings.yaml     # Schema harmonization configuration
+├── requirements.txt        # Python dependencies 
+├── .env                    # Your GCP configuration
+└── migration.log          # Migration history
 ```
 
 ## 🚀 Quick Start
@@ -31,7 +31,7 @@ bigquery/
 # Install Python packages
 pip install -r requirements.txt
 
-# Install mdbtools for .mdb file processing
+# Install mdbtools for database processing
 brew install mdbtools                # macOS
 # sudo apt-get install mdbtools      # Linux
 ```
@@ -50,27 +50,46 @@ cp .env.example .env
 ### 3. Add Your Data
 
 ```bash
-# Copy .mdb files to data directory
+# Copy database files to data directory
 cp /path/to/your/*.mdb data/
+cp /path/to/your/*.accdb data/
 ```
 
 ### 4. Run Migration
 
 ```bash
-# Single command migrates everything
-python migration_pipeline.py
+# Run complete migration
+python migrate.py
+
+# Test migration results
+python migrate.py --test
+
+# Clean up old objects (if needed)
+python migrate.py --cleanup
+
+# Create just Looker table (if unified view exists)
+python migrate.py --looker-only
 ```
 
 ## 📊 What Gets Created
 
-### BigQuery Tables
-- `historical_bills_YYYY` - Bills data for each year
-- `historical_categories_YYYY` - Policy categories for each year
+### BigQuery Objects
 
-### BigQuery Views (Ready for Looker Studio)
-- `all_historical_bills` - All bills from all years combined
-- `all_historical_categories` - All categories from all years combined
-- `looker_bills_dashboard` - Enhanced view with calculated fields
+**Individual Year Tables:**
+- `historical_bills_YYYY` - Harmonized bills data for each year (2005-2024)
+
+**Unified Data:**
+- `all_historical_bills_unified` - All years combined with consistent schema
+
+**Looker Studio Table (Primary):**
+- `looker_comprehensive_bills` - **THE** table for all analysis
+  - 📊 All bill data with calculated fields
+  - 🗺️ Geographic groupings (state, region)  
+  - 📅 Time period groupings
+  - ⚖️ Status progressions and success metrics
+  - 🏷️ Policy area classifications and counts
+  - 📝 All topics/subpolicies
+  - 💡 Analytical flags and helpers
 
 ## 🔍 Verification Built-In
 

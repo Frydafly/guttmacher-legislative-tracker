@@ -1,0 +1,265 @@
+# Field Mappings Configuration for Historical Data Migration
+# Maps varying field names across years to standardized schema
+
+# Core Bill Information Fields
+core_fields:
+  id:
+    - "ID"
+  state:
+    - "State"
+    - "STATE"
+  bill_type:
+    - "BillType"
+    - "BILLTYPE"
+    - "Bill Type"
+  bill_number:
+    - "BillNumber"
+    - "BILLNUMBER"
+    - "Bill Number"
+  description:
+    - "BillDescription"
+    - "Bill Description"
+    - "Bill Summary"
+    - "SUMMARY"
+    - "Summary"
+
+# Status and Progress Fields
+status_fields:
+  introduced:
+    - "Introduced"
+  seriously_considered:
+    - "Seriously Considered"
+    - "Seriously Considered by Committee"
+  passed_first_chamber:
+    - "Passed 1 Chamber"
+    - "Passed 1st Chamber" 
+    - "Passed First Chamber"
+    - "Passed One House"
+  passed_second_chamber:
+    - "Passed 2 Chamber"
+    - "Passed 2nd Chamber"
+    - "Passed Second Chamber"
+    - "Passed Both Houses"
+  enacted:
+    - "Enacted"
+  vetoed:
+    - "Vetoed"
+  dead:
+    - "Dead"
+    - "Dead for the Year"
+  pending:
+    - "Pending"
+
+# Policy Category Fields
+policy_categories:
+  abortion:
+    - "Abortion"
+  appropriations:
+    - "Appropriations"
+  contraception:
+    - "Contraception"
+    - "Family Planning"
+    - "Family Planning/MCH"
+  emergency_contraception:
+    - "EC"
+  insurance:
+    - "Insurance"
+  minors:
+    - "Minors"
+    - "Teen Issues"
+    - "Youth"
+    - "Teens"
+  pregnancy:
+    - "Pregnancy"
+  refusal:
+    - "Refusal"
+    - "Refusal Clause"
+  sex_education:
+    - "Sex Ed"
+  fetal_issues:
+    - "Fetal Issues"
+    - "Fetal Personhood"
+  fetal_tissue:
+    - "Fetal Tissue"
+  incarceration:
+    - "Incarceration"
+  period_products:
+    - "Period Products"
+  stis:
+    - "STIs"
+    - "HIV/STIs"
+
+# Intent Classification Fields  
+intent_fields:
+  positive:
+    - "Positive"
+  neutral:
+    - "Neutral"
+  restrictive:
+    - "Restrictive"
+    - "Negative"
+
+# Date Fields
+date_fields:
+  last_action_date:
+    - "Last Action Date"
+    - "Last Date Action"
+    - "Date last action"
+  effective_date:
+    - "Effective Date"
+  date_last_updated:
+    - "Date Last Updated"
+    - "Last updated"
+  introduced_date:
+    - "IntroducedDate"
+  enacted_date:
+    - "EnactedDate"
+  vetoed_date:
+    - "VetoedDate"
+
+# Subpolicy/Topic Fields
+topic_fields:
+  topic_1:
+    - "Topic 1"
+    - "Specific Topic 1"
+    - "Specific issue 1"
+    - "Subpolicy1"
+  topic_2:
+    - "Topic 2"
+    - "Specific Topic 2"
+    - "Specific issue 2"
+    - "Subpolicy2"
+  topic_3:
+    - "Topic 3"
+    - "Specific Topic 3"
+    - "Specific issue 3"
+    - "Subpolicy3"
+  topic_4:
+    - "Topic 4"
+    - "Specific Topic 4"
+    - "Subpolicy4"
+  topic_5:
+    - "Topic 5"
+    - "Specific Topic 5"
+    - "Subpolicy5"
+  topic_6:
+    - "Topic 6"
+    - "Specific Topic 6"
+    - "Subpolicy6"
+  topic_7:
+    - "Subpolicy7"
+  topic_8:
+    - "Subpolicy8"
+  topic_9:
+    - "Subpolicy9"
+  topic_10:
+    - "Subpolicy10"
+
+# Content Fields
+content_fields:
+  history:
+    - "History"
+    - "HISTORY"
+    - "Action"
+  notes:
+    - "Notes"
+  website_blurb:
+    - "WebsiteBlurb"
+  internal_summary:
+    - "Internal Summary"
+    - "Previous Summary(ies)"
+
+# Bill Type Classifications
+bill_type_fields:
+  legislation:
+    - "Legislation"
+  resolution:
+    - "Resolution"
+  ballot_initiative:
+    - "Ballot Initiative"
+  constitutional_amendment:
+    - "Constitutional Amendment"
+  court_case:
+    - "Court Case"
+
+# Year-specific table name patterns
+table_patterns:
+  2005:
+    primary_table: "2005 State Legislative Table"
+    secondary_table: "Specific Monitoring Categories"
+  2006-2007:  
+    primary_table: ".*Monitoring Table"
+    secondary_table: "Specific Bill Topics"
+  2008-2014:
+    primary_table: "Legislative Monitoring Table"
+    secondary_table: "Specific Bill Topics"
+  2015-2018:
+    primary_table: "Legislative Monitoring"
+    secondary_table: "Specific Bill Topics"
+  2019-2024:
+    primary_table: "Legislative Monitoring"
+    secondary_table: "Specific Subpolicies"
+
+# Data type mappings for BigQuery
+bigquery_types:
+  id: "INTEGER"
+  state: "STRING"
+  bill_type: "STRING"  
+  bill_number: "STRING"
+  description: "STRING"
+  history: "STRING"
+  notes: "STRING"
+  website_blurb: "STRING"
+  internal_summary: "STRING"
+  last_action_date: "DATE"
+  effective_date: "STRING"  # Mixed types, keep as string
+  date_last_updated: "DATETIME"
+  introduced_date: "DATE"
+  enacted_date: "DATE"
+  vetoed_date: "DATE"
+  # All boolean fields
+  introduced: "BOOLEAN"
+  seriously_considered: "BOOLEAN"
+  passed_first_chamber: "BOOLEAN"
+  passed_second_chamber: "BOOLEAN"
+  enacted: "BOOLEAN"
+  vetoed: "BOOLEAN"
+  dead: "BOOLEAN"
+  pending: "BOOLEAN"
+  abortion: "BOOLEAN"
+  appropriations: "BOOLEAN"
+  contraception: "BOOLEAN"
+  emergency_contraception: "BOOLEAN"
+  insurance: "BOOLEAN"
+  minors: "BOOLEAN"
+  pregnancy: "BOOLEAN"
+  refusal: "BOOLEAN"
+  sex_education: "BOOLEAN"
+  fetal_issues: "BOOLEAN"
+  fetal_tissue: "BOOLEAN"
+  incarceration: "BOOLEAN"
+  period_products: "BOOLEAN"
+  stis: "BOOLEAN"
+  positive: "BOOLEAN"
+  neutral: "BOOLEAN"
+  restrictive: "BOOLEAN"
+  legislation: "BOOLEAN"
+  resolution: "BOOLEAN"
+  ballot_initiative: "BOOLEAN"
+  constitutional_amendment: "BOOLEAN"
+  court_case: "BOOLEAN"
+  # Topics as strings
+  topic_1: "STRING"
+  topic_2: "STRING"
+  topic_3: "STRING"
+  topic_4: "STRING"
+  topic_5: "STRING"
+  topic_6: "STRING"
+  topic_7: "STRING"
+  topic_8: "STRING"
+  topic_9: "STRING"
+  topic_10: "STRING"
+  # Metadata
+  data_year: "INTEGER"
+  migration_date: "DATE"
+  data_source: "STRING"

@@ -1,138 +1,165 @@
--- LOOKER STUDIO VIEWS FOR GUTTMACHER LEGISLATIVE TRACKER
--- =======================================================
--- These views work with your actual migrated data structure
--- Run these to create optimized views for Looker Studio dashboards
+-- BigQuery Views for Looker Studio Analysis - Enhanced Migration Pipeline
+-- =============================================================================
+-- These views work with the ENHANCED migration pipeline using field mappings
+-- Based on standardized schema from field_mappings.yaml
+-- Uses all_historical_bills_unified view created by enhanced_migration_pipeline.py
 
--- =====================================================================
--- Main Bills Dashboard View - Primary data source for Looker Studio
--- =====================================================================
-CREATE OR REPLACE VIEW `guttmacher-legislative-tracker.legislative_tracker_historical.looker_bills_dashboard` AS
+-- =============================================================================
+-- 1. MAIN BILLS ANALYSIS VIEW - Primary data source for Looker Studio
+-- =============================================================================
+CREATE OR REPLACE VIEW `{project_id}.{dataset_id}.looker_bills_dashboard` AS
 SELECT 
-    -- Primary identifiers
-    id as bill_id,
-    CONCAT(state, '-', bill_number, '-', data_year) as unique_bill_key,
-    
-    -- Geographic and temporal dimensions
-    state as state_code,
-    CASE state
-        WHEN 'AL' THEN 'Alabama'
-        WHEN 'AK' THEN 'Alaska'
-        WHEN 'AZ' THEN 'Arizona'
-        WHEN 'AR' THEN 'Arkansas'
-        WHEN 'CA' THEN 'California'
-        WHEN 'CO' THEN 'Colorado'
-        WHEN 'CT' THEN 'Connecticut'
-        WHEN 'DE' THEN 'Delaware'
-        WHEN 'FL' THEN 'Florida'
-        WHEN 'GA' THEN 'Georgia'
-        WHEN 'HI' THEN 'Hawaii'
-        WHEN 'ID' THEN 'Idaho'
-        WHEN 'IL' THEN 'Illinois'
-        WHEN 'IN' THEN 'Indiana'
-        WHEN 'IA' THEN 'Iowa'
-        WHEN 'KS' THEN 'Kansas'
-        WHEN 'KY' THEN 'Kentucky'
-        WHEN 'LA' THEN 'Louisiana'
-        WHEN 'ME' THEN 'Maine'
-        WHEN 'MD' THEN 'Maryland'
-        WHEN 'MA' THEN 'Massachusetts'
-        WHEN 'MI' THEN 'Michigan'
-        WHEN 'MN' THEN 'Minnesota'
-        WHEN 'MS' THEN 'Mississippi'
-        WHEN 'MO' THEN 'Missouri'
-        WHEN 'MT' THEN 'Montana'
-        WHEN 'NE' THEN 'Nebraska'
-        WHEN 'NV' THEN 'Nevada'
-        WHEN 'NH' THEN 'New Hampshire'
-        WHEN 'NJ' THEN 'New Jersey'
-        WHEN 'NM' THEN 'New Mexico'
-        WHEN 'NY' THEN 'New York'
-        WHEN 'NC' THEN 'North Carolina'
-        WHEN 'ND' THEN 'North Dakota'
-        WHEN 'OH' THEN 'Ohio'
-        WHEN 'OK' THEN 'Oklahoma'
-        WHEN 'OR' THEN 'Oregon'
-        WHEN 'PA' THEN 'Pennsylvania'
-        WHEN 'RI' THEN 'Rhode Island'
-        WHEN 'SC' THEN 'South Carolina'
-        WHEN 'SD' THEN 'South Dakota'
-        WHEN 'TN' THEN 'Tennessee'
-        WHEN 'TX' THEN 'Texas'
-        WHEN 'UT' THEN 'Utah'
-        WHEN 'VT' THEN 'Vermont'
-        WHEN 'VA' THEN 'Virginia'
-        WHEN 'WA' THEN 'Washington'
-        WHEN 'WV' THEN 'West Virginia'
-        WHEN 'WI' THEN 'Wisconsin'
-        WHEN 'WY' THEN 'Wyoming'
-        ELSE state
-    END as state_name,
-    
-    CAST(data_year AS INT64) as data_year,
-    data_year as data_year_str,  -- For categorical filtering
-    
-    -- Bill information
-    bill_number,
-    bill_summary as description,
-    sponsor,
-    
-    -- Status information
-    status as bill_status,
-    CASE 
-        WHEN CAST(enacted AS INT64) = 1 THEN 'Enacted'
-        WHEN CAST(vetoed AS INT64) = 1 THEN 'Vetoed'
-        WHEN CAST(passed_both_houses AS INT64) = 1 THEN 'Passed Both Houses'
-        WHEN CAST(passed_one_house AS INT64) = 1 THEN 'Passed One House'
-        WHEN CAST(passed_committee AS INT64) = 1 THEN 'Passed Committee'
-        ELSE 'Other'
-    END as status_category,
-    
-    -- Policy area flags (convert 1/0 strings to booleans)
-    CAST(abortion AS INT64) = 1 as is_abortion_related,
-    CAST(family_planning_mch AS INT64) = 1 as is_family_planning,
-    CAST(teen_issues AS INT64) = 1 as is_teen_issues,
-    CAST(fetal_rights AS INT64) = 1 as is_fetal_rights,
-    CAST(insurance AS INT64) = 1 as is_insurance_related,
-    CAST(appropriations AS INT64) = 1 as is_appropriations,
-    
-    -- Outcome flags
-    CAST(enacted AS INT64) = 1 as is_enacted,
-    CAST(vetoed AS INT64) = 1 as is_vetoed,
-    CAST(passed_both_houses AS INT64) = 1 as passed_both_houses,
-    CAST(passed_one_house AS INT64) = 1 as passed_one_house,
-    CAST(passed_committee AS INT64) = 1 as passed_committee,
-    
-    -- Policy areas (categorical)
-    specific_issue_1 as primary_issue,
-    specific_issue_2 as secondary_issue,
-    specific_issue_3 as tertiary_issue,
-    
-    -- Date fields (parse from string)
-    SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', date_last_action) as last_action_date,
-    SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', date_of_version_last_read) as bill_read_date,
-    SAFE.PARSE_DATE('%Y-%m-%d', effective_date) as effective_date,
-    SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', last_updated) as last_updated,
-    
-    -- Derived date components
-    EXTRACT(YEAR FROM SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', date_last_action)) as action_year,
-    EXTRACT(MONTH FROM SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', date_last_action)) as action_month,
-    EXTRACT(QUARTER FROM SAFE.PARSE_DATETIME('%Y-%m-%d %H:%M:%S', date_last_action)) as action_quarter,
-    
-    -- Legislative session info
-    CAST(legislature_adjourned AS INT64) = 1 as session_adjourned,
-    
-    -- Data provenance
-    data_source,
-    SAFE.PARSE_DATE('%Y-%m-%d', migration_date) as migration_date,
-    
-    -- Additional text fields
-    action as action_history,
-    notes,
-    codification_site,
-    read_by as reviewed_by
-    
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills`
-WHERE state IS NOT NULL 
+  -- Core identifiers
+  id,
+  data_year,
+  state,
+  bill_type,
+  bill_number,
+  CONCAT(state, '-', bill_number, '-', data_year) as unique_bill_key,
+  
+  -- State name mapping
+  CASE state
+    WHEN 'AL' THEN 'Alabama' WHEN 'AK' THEN 'Alaska' WHEN 'AZ' THEN 'Arizona'
+    WHEN 'AR' THEN 'Arkansas' WHEN 'CA' THEN 'California' WHEN 'CO' THEN 'Colorado'
+    WHEN 'CT' THEN 'Connecticut' WHEN 'DE' THEN 'Delaware' WHEN 'FL' THEN 'Florida'
+    WHEN 'GA' THEN 'Georgia' WHEN 'HI' THEN 'Hawaii' WHEN 'ID' THEN 'Idaho'
+    WHEN 'IL' THEN 'Illinois' WHEN 'IN' THEN 'Indiana' WHEN 'IA' THEN 'Iowa'
+    WHEN 'KS' THEN 'Kansas' WHEN 'KY' THEN 'Kentucky' WHEN 'LA' THEN 'Louisiana'
+    WHEN 'ME' THEN 'Maine' WHEN 'MD' THEN 'Maryland' WHEN 'MA' THEN 'Massachusetts'
+    WHEN 'MI' THEN 'Michigan' WHEN 'MN' THEN 'Minnesota' WHEN 'MS' THEN 'Mississippi'
+    WHEN 'MO' THEN 'Missouri' WHEN 'MT' THEN 'Montana' WHEN 'NE' THEN 'Nebraska'
+    WHEN 'NV' THEN 'Nevada' WHEN 'NH' THEN 'New Hampshire' WHEN 'NJ' THEN 'New Jersey'
+    WHEN 'NM' THEN 'New Mexico' WHEN 'NY' THEN 'New York' WHEN 'NC' THEN 'North Carolina'
+    WHEN 'ND' THEN 'North Dakota' WHEN 'OH' THEN 'Ohio' WHEN 'OK' THEN 'Oklahoma'
+    WHEN 'OR' THEN 'Oregon' WHEN 'PA' THEN 'Pennsylvania' WHEN 'RI' THEN 'Rhode Island'
+    WHEN 'SC' THEN 'South Carolina' WHEN 'SD' THEN 'South Dakota' WHEN 'TN' THEN 'Tennessee'
+    WHEN 'TX' THEN 'Texas' WHEN 'UT' THEN 'Utah' WHEN 'VT' THEN 'Vermont'
+    WHEN 'VA' THEN 'Virginia' WHEN 'WA' THEN 'Washington' WHEN 'WV' THEN 'West Virginia'
+    WHEN 'WI' THEN 'Wisconsin' WHEN 'WY' THEN 'Wyoming'
+    ELSE state
+  END as state_name,
+  
+  -- Descriptive fields
+  description,
+  history,
+  notes,
+  website_blurb,
+  internal_summary,
+  
+  -- Key dates
+  last_action_date,
+  introduced_date,
+  enacted_date,
+  vetoed_date,
+  date_last_updated,
+  effective_date,
+  
+  -- Status progression (calculated)
+  CASE 
+    WHEN enacted = TRUE THEN 'Enacted'
+    WHEN vetoed = TRUE THEN 'Vetoed'
+    WHEN dead = TRUE THEN 'Dead'
+    WHEN pending = TRUE THEN 'Pending'
+    WHEN passed_second_chamber = TRUE THEN 'Passed Both Chambers'
+    WHEN passed_first_chamber = TRUE THEN 'Passed One Chamber'
+    WHEN seriously_considered = TRUE THEN 'Seriously Considered'
+    WHEN introduced = TRUE THEN 'Introduced'
+    ELSE 'Unknown'
+  END AS status_category,
+  
+  -- Intent classification
+  CASE
+    WHEN positive = TRUE THEN 'Positive'
+    WHEN neutral = TRUE THEN 'Neutral' 
+    WHEN restrictive = TRUE THEN 'Restrictive'
+    ELSE 'Unclassified'
+  END AS intent,
+  
+  -- Policy areas (major categories)
+  abortion,
+  contraception,
+  emergency_contraception,
+  minors,
+  pregnancy,
+  refusal,
+  sex_education,
+  insurance,
+  appropriations,
+  
+  -- Newer policy areas
+  fetal_issues,
+  fetal_tissue,
+  incarceration,
+  period_products,
+  stis,
+  
+  -- Bill types
+  legislation,
+  resolution,
+  ballot_initiative,
+  constitutional_amendment,
+  court_case,
+  
+  -- Topics/Subpolicies (consolidated)
+  topic_1,
+  topic_2, 
+  topic_3,
+  topic_4,
+  topic_5,
+  topic_6,
+  topic_7,
+  topic_8,
+  topic_9,
+  topic_10,
+  
+  -- Status flags
+  introduced,
+  seriously_considered,
+  passed_first_chamber,
+  passed_second_chamber,
+  enacted,
+  vetoed,
+  dead,
+  pending,
+  positive,
+  neutral,
+  restrictive,
+  
+  -- Calculated fields for analysis
+  DATE_DIFF(enacted_date, introduced_date, DAY) as days_to_enactment,
+  DATE_DIFF(last_action_date, introduced_date, DAY) as days_since_introduction,
+  
+  -- Policy area count (how many policy areas this bill touches)
+  (CAST(abortion AS INT64) +
+   CAST(contraception AS INT64) +
+   CAST(emergency_contraception AS INT64) +
+   CAST(minors AS INT64) +
+   CAST(pregnancy AS INT64) +
+   CAST(refusal AS INT64) +
+   CAST(sex_education AS INT64) +
+   CAST(insurance AS INT64) +
+   CAST(appropriations AS INT64) +
+   CAST(fetal_issues AS INT64) +
+   CAST(fetal_tissue AS INT64) +
+   CAST(incarceration AS INT64) +
+   CAST(period_products AS INT64) +
+   CAST(stis AS INT64)) as policy_area_count,
+  
+  -- Time periods for trend analysis
+  CASE 
+    WHEN data_year BETWEEN 2005 AND 2009 THEN '2005-2009'
+    WHEN data_year BETWEEN 2010 AND 2014 THEN '2010-2014'
+    WHEN data_year BETWEEN 2015 AND 2019 THEN '2015-2019'
+    WHEN data_year BETWEEN 2020 AND 2024 THEN '2020-2024'
+    ELSE 'Other'
+  END as time_period,
+  
+  -- Metadata
+  migration_date,
+  data_source
+
+FROM `{project_id}.{dataset_id}.all_historical_bills_unified`
+WHERE state IS NOT NULL
   AND bill_number IS NOT NULL;
 
 -- =====================================================================
