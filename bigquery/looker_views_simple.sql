@@ -2,7 +2,7 @@
 -- Based on actual schema from all_historical_bills_unified
 
 -- 1. Main Bills Dashboard View
-CREATE OR REPLACE VIEW `guttmacher-legislative-tracker.legislative_tracker_historical.looker_bills_dashboard` AS
+CREATE OR REPLACE VIEW `{{ project_id }}.{{ dataset_id }}.looker_bills_dashboard` AS
 SELECT 
   -- Core identifiers
   id,
@@ -104,12 +104,12 @@ SELECT
   migration_date,
   data_source
 
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
+FROM `{{ project_id }}.{{ dataset_id }}.all_historical_bills_unified`
 WHERE state IS NOT NULL
   AND bill_number IS NOT NULL;
 
 -- 2. State Summary View
-CREATE OR REPLACE VIEW `guttmacher-legislative-tracker.legislative_tracker_historical.looker_state_summary` AS
+CREATE OR REPLACE VIEW `{{ project_id }}.{{ dataset_id }}.looker_state_summary` AS
 SELECT 
   state,
   data_year,
@@ -128,11 +128,11 @@ SELECT
   -- Rates
   ROUND(COUNT(CASE WHEN enacted = TRUE THEN 1 END) * 100.0 / NULLIF(COUNT(*), 0), 1) as enactment_rate
 
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
+FROM `{{ project_id }}.{{ dataset_id }}.all_historical_bills_unified`
 GROUP BY state, data_year;
 
 -- 3. Time Series View
-CREATE OR REPLACE VIEW `guttmacher-legislative-tracker.legislative_tracker_historical.looker_time_series` AS
+CREATE OR REPLACE VIEW `{{ project_id }}.{{ dataset_id }}.looker_time_series` AS
 SELECT 
   data_year,
   EXTRACT(MONTH FROM introduced_date) as month,
@@ -143,19 +143,19 @@ SELECT
   COUNT(CASE WHEN positive = TRUE THEN 1 END) as positive_bills,
   COUNT(CASE WHEN restrictive = TRUE THEN 1 END) as restrictive_bills
 
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
+FROM `{{ project_id }}.{{ dataset_id }}.all_historical_bills_unified`
 WHERE introduced_date IS NOT NULL
 GROUP BY data_year, month, quarter, state;
 
 -- 4. Topic Analysis View
-CREATE OR REPLACE VIEW `guttmacher-legislative-tracker.legislative_tracker_historical.looker_topic_analysis` AS
+CREATE OR REPLACE VIEW `{{ project_id }}.{{ dataset_id }}.looker_topic_analysis` AS
 WITH topic_unnested AS (
   SELECT 
     data_year,
     state,
     enacted,
     topic
-  FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`,
+  FROM `{{ project_id }}.{{ dataset_id }}.all_historical_bills_unified`,
   UNNEST([topic_1, topic_2, topic_3, topic_4, topic_5, topic_6, topic_7, topic_8, topic_9, topic_10]) as topic
   WHERE topic IS NOT NULL
 )

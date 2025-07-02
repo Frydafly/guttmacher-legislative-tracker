@@ -210,11 +210,20 @@ class GuttmacherMigration:
         all_standard_fields.discard('table_patterns')
         all_standard_fields.discard('bigquery_types')
         
-        # Initialize fields
+        # Initialize fields with appropriate defaults
+        # Status fields should default to FALSE, category fields should default to NULL
+        status_fields = {
+            'introduced', 'seriously_considered', 'passed_first_chamber', 
+            'passed_second_chamber', 'enacted', 'vetoed', 'dead', 'pending'
+        }
+        
         for field in all_standard_fields:
             field_type = self.field_mappings.get('bigquery_types', {}).get(field, 'STRING')
             if field_type == 'BOOLEAN':
-                standardized_data[field] = False
+                if field in status_fields:
+                    standardized_data[field] = False  # Status fields default to FALSE
+                else:
+                    standardized_data[field] = None   # Category fields default to NULL when not tracked
             else:
                 standardized_data[field] = None
         
@@ -346,8 +355,8 @@ class GuttmacherMigration:
         return False
 
     def create_unified_view(self):
-        """Create unified view of all historical data."""
-        self.logger.info("🔗 Creating unified historical view...")
+        """Create unified view and table of all historical data."""
+        self.logger.info("🔗 Creating unified historical view and table...")
         
         query = f"""
         SELECT table_name FROM `{self.project_id}.{self.dataset_id}.INFORMATION_SCHEMA.TABLES`
@@ -366,6 +375,7 @@ class GuttmacherMigration:
 
         union_parts = [f"SELECT * FROM `{self.project_id}.{self.dataset_id}.{table}`" for table in tables]
         
+        # Create view first (for compatibility)
         create_view_sql = f"""
         CREATE OR REPLACE VIEW `{self.project_id}.{self.dataset_id}.all_historical_bills_unified` AS
         {' UNION ALL '.join(union_parts)}
@@ -377,6 +387,21 @@ class GuttmacherMigration:
             self.logger.info("✅ Created unified view: all_historical_bills_unified")
         except google_exceptions.GoogleCloudError as e:
             self.logger.error("Failed to create unified view: %s", e)
+            return
+            
+        # Create materialized table for better Looker performance
+        create_table_sql = f"""
+        CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.all_historical_bills_materialized` 
+        CLUSTER BY (state, data_year) AS
+        {' UNION ALL '.join(union_parts)}
+        """
+
+        try:
+            job = self.bq_client.query(create_table_sql)
+            job.result(timeout=600)  # Longer timeout for large table creation
+            self.logger.info("✅ Created materialized table: all_historical_bills_materialized")
+        except google_exceptions.GoogleCloudError as e:
+            self.logger.error("Failed to create materialized table: %s", e)
 
     def create_looker_table(self):
         """Create comprehensive Looker Studio table."""
@@ -540,6 +565,40 @@ class GuttmacherMigration:
             self.logger.error("❌ Failed to create Looker table: %s", e)
             return False
 
+    def create_analytics_views(self):
+        """Create comprehensive analytics views for state/year analysis."""
+        self.logger.info("🔄 Creating analytics views...")
+        
+        analytics_sql_path = self.base_path / "sql" / "state_year_analytics.sql"
+        
+        if not analytics_sql_path.exists():
+            self.logger.warning("Analytics SQL file not found: %s", analytics_sql_path)
+            return False
+            
+        # Read and execute analytics SQL
+        with open(analytics_sql_path) as f:
+            analytics_sql = f.read()
+            
+        # Replace placeholders
+        analytics_sql = analytics_sql.replace("{{ project_id }}", self.project_id)
+        analytics_sql = analytics_sql.replace("{{ dataset_id }}", self.dataset_id)
+        
+        # Execute each statement separately
+        statements = [stmt.strip() for stmt in analytics_sql.split(';') if stmt.strip()]
+        
+        for i, statement in enumerate(statements):
+            try:
+                self.logger.info("Executing analytics statement %d/%d", i+1, len(statements))
+                job = self.bq_client.query(statement)
+                job.result(timeout=300)
+                self.logger.info("✓ Analytics statement %d completed", i+1)
+            except Exception as e:
+                self.logger.error("✗ Analytics statement %d failed: %s", i+1, e)
+                return False
+                
+        self.logger.info("✅ Created all analytics views successfully")
+        return True
+
     def run_migration(self) -> bool:
         """Run the complete migration."""
         self.logger.info("🚀 Starting Guttmacher historical data migration...")
@@ -563,6 +622,7 @@ class GuttmacherMigration:
         if self.stats["files_processed"] > 0:
             self.create_unified_view()
             self.create_looker_table()
+            self.create_analytics_views()
             self.generate_final_report()
             return True
         else:
