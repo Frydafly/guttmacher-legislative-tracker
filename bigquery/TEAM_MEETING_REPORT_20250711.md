@@ -207,12 +207,88 @@ Beyond field existence, we analyzed which fields have meaningful TRUE/FALSE data
 2. **Bicameral passage** - 0.7% but shows full legislative success
 3. **Emerging issues** - Period products, incarceration policies
 
+## Complete NULL vs Populated Analysis
+
+We analyzed NULL rates for ALL field types (dates, text, status, categories) across all years:
+
+### Fields with Perfect Population (0% NULL across all years):
+**Status Fields (TRUE/FALSE data):**
+- `introduced`, `enacted`, `vetoed`, `dead`, `pending` - 100% populated
+- `passed_first_chamber`, `passed_second_chamber`, `seriously_considered` - 100% populated
+
+**Policy Categories (TRUE/FALSE data):**
+- `abortion`, `contraception`, `minors`, `sex_education`, `insurance`, `pregnancy` - 100% populated
+- All other policy categories (emergency_contraception, appropriations, etc.) - 100% populated
+
+**Intent Classification (TRUE/FALSE data):**
+- `positive`, `neutral`, `restrictive` - 100% populated
+
+**Basic Identifiers:**
+- `state` - 100% populated (perfect)
+- `bill_number` - 99.4% populated (excellent)
+
+### Fields with Major NULL Issues:
+
+#### Date Fields (Highly Variable):
+| Field | NULL Rate Range | Key Issues |
+|-------|----------------|------------|
+| **introduced_date** | 0-100% | Missing entirely 2002-2015, then 95%+ populated |
+| **last_action_date** | 0-100% | Missing 2006-2008, otherwise 95%+ |
+| **effective_date** | 83-100% | Always poor (only 12-17% populated) |
+| **enacted_date** | 83-100% | Very poor (only 0-17% populated) |
+| **vetoed_date** | 98-100% | Extremely rare events |
+
+#### Text Fields (Mixed Quality):
+| Field | NULL Rate Range | Pattern |
+|-------|----------------|---------|
+| **description** | 0-31% | Good overall, dip in 2010 (31% NULL) |
+| **internal_summary** | 9-100% | Terrible 2002-2018, good 2019+ (9% NULL) |
+| **history** | 0-20% | Generally good |
+| **notes** | 30-98% | Declining quality over time |
+| **website_blurb** | 80-100% | Consistently poor |
+
+#### Classification Fields:
+| Field | NULL Rate Range | Pattern |
+|-------|----------------|---------|
+| **bill_type** | 0-100% | Missing 2002-2005, then excellent |
+| **topic_1/2/3** | 60-100% | Poor throughout |
+
+### Data Evolution Patterns:
+
+**2002-2005 (Early Era):** 
+- Perfect: Status fields, policy categories, basic identifiers
+- Missing: bill_type, all date fields except last_action_date, internal_summary
+
+**2006-2015 (Development Era):**
+- Added: bill_type tracking, some date tracking
+- Issues: last_action_date missing 2006-2008, internal_summary still poor
+
+**2016+ (Modern Era):**
+- Added: introduced_date tracking (95%+ populated)
+- Improved: internal_summary (2019+), last_action_date consistent
+- Still poor: effective_date, enacted_date, website_blurb
+
+### Critical for Team Understanding:
+
+**What Has Perfect Data (0% NULL):**
+1. **Legislative outcomes** - All status fields 100% populated
+2. **Policy classification** - All category fields 100% populated  
+3. **Intent analysis** - All intent fields 100% populated
+4. **Geographic data** - State field 100% populated
+
+**What Has Problematic NULL Rates:**
+1. **Date analysis** - Varies dramatically by field and year
+2. **Text analysis** - internal_summary only reliable 2019+
+3. **Bill identification** - bill_type missing 2002-2005
+4. **Website content** - Poor throughout
+
 ### Data Quality Summary:
-- **Excellent**: Core tracking has been remarkably consistent since 2002
-- **Improved**: Date tracking and bill classification dramatically improved after 2015
-- **Reliable**: The NULL vs FALSE implementation ensures accurate analysis
-- **Complete**: 100% of bills have all status and category fields (with appropriate NULL/FALSE values)
+- **Excellent**: Core tracking (status, policy, intent) has been remarkably consistent since 2002
+- **Variable**: Date and text fields show major evolution and gaps
+- **Reliable**: The NULL vs FALSE implementation ensures accurate analysis for core fields
+- **Complete**: 100% of bills have all status and category fields (0% NULL for these)
 - **Rich**: 88% intent classification, 38% abortion coverage, 55% outcome determination
+- **Caution needed**: Date analyses require year-specific consideration due to NULL patterns
 
 ## Next Steps
 1. Fix data issues for 2014, 2015, and 2024 (can be done with `add_year.py`)
