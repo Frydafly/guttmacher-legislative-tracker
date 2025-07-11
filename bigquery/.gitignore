@@ -41,6 +41,12 @@ MANIFEST
 *.swo
 *~
 
+# Claude AI files
+.claude/
+claude_*
+*_claude*
+CLAUDE.md.backup*
+
 # OS files
 .DS_Store
 .DS_Store?

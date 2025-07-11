@@ -149,11 +149,70 @@ All policy category fields exist for every bill, using NULL to indicate "not tra
 3. **Internal summaries** - Sparse before 2015
 4. **Specific subcategories** - Some added over time but properly NULL when not applicable
 
+## TRUE/FALSE Population Analysis (Data Richness)
+
+Beyond field existence, we analyzed which fields have meaningful TRUE/FALSE data vs mostly NULL values:
+
+### High-Value Status Fields (Rich Data for Analysis):
+| Field | TRUE Rate | Description | Analysis Value |
+|-------|-----------|-------------|----------------|
+| **introduced** | 94.2% | Bill was introduced | ⭐⭐⭐ Excellent |
+| **dead** | 54.6% | Bill failed/died | ⭐⭐⭐ Excellent |
+| **pending** | 26.5% | Bill is still active | ⭐⭐⭐ Good |
+| **enacted** | 12.8% | Bill became law | ⭐⭐⭐ Good |
+| **seriously_considered** | 7.4% | Received serious consideration | ⭐⭐ Moderate |
+| **passed_first_chamber** | 6.9% | Passed first chamber | ⭐⭐ Moderate |
+
+### Low-Activity Status Fields:
+- **vetoed**: 1.1% TRUE (rare but important when it happens)
+- **passed_second_chamber**: 0.7% TRUE (very rare events)
+
+### Most Valuable Policy Categories for Analysis:
+| Field | TRUE Rate | Analysis Potential |
+|-------|-----------|-------------------|
+| **abortion** | 38.1% | ⭐⭐⭐ Excellent - largest category |
+| **minors** | 14.3% | ⭐⭐⭐ Good coverage |
+| **pregnancy** | 10.9% | ⭐⭐⭐ Good coverage |
+| **contraception** | 10.6% | ⭐⭐⭐ Good coverage |
+| **insurance** | 10.2% | ⭐⭐⭐ Good coverage |
+| **sex_education** | 8.8% | ⭐⭐ Moderate coverage |
+| **appropriations** | 5.2% | ⭐⭐ Moderate coverage |
+| **emergency_contraception** | 2.6% | ⭐ Low but trackable |
+
+### Intent Classification Coverage:
+- **88.4% of all bills have intent classification** - excellent for analysis!
+  - **Restrictive**: 31.2% (5,095 bills)
+  - **Positive**: 40.0% (6,529 bills) 
+  - **Neutral**: 17.2% (2,808 bills)
+
+### Emerging Policy Areas:
+- **incarceration**: 0.8% TRUE (130 bills) - growing trend
+- **period_products**: 0.4% TRUE (65 bills) - very recent policy area
+
+## What This Means for Analysis
+
+### **Excellent Analysis Potential** (Rich TRUE/FALSE data):
+1. **Legislative outcomes** - 94% introduced, 13% enacted, 55% died
+2. **Abortion policy** - 38% of all bills (6,220 bills)
+3. **Intent analysis** - 88% classified (14,432 bills)
+4. **Core policy areas** - Minors, pregnancy, contraception all 10%+
+
+### **Moderate Analysis Potential** (Some TRUE values):
+1. **Advanced legislative process** - First chamber passage, serious consideration
+2. **Funding bills** - Appropriations (5% = 850 bills)
+3. **Education policy** - Sex education (9% = 1,440 bills)
+
+### **Limited but Meaningful** (Rare but important events):
+1. **Vetoes** - Only 1% but politically significant (180 bills)
+2. **Bicameral passage** - 0.7% but shows full legislative success
+3. **Emerging issues** - Period products, incarceration policies
+
 ### Data Quality Summary:
 - **Excellent**: Core tracking has been remarkably consistent since 2002
 - **Improved**: Date tracking and bill classification dramatically improved after 2015
 - **Reliable**: The NULL vs FALSE implementation ensures accurate analysis
 - **Complete**: 100% of bills have all status and category fields (with appropriate NULL/FALSE values)
+- **Rich**: 88% intent classification, 38% abortion coverage, 55% outcome determination
 
 ## Next Steps
 1. Fix data issues for 2014, 2015, and 2024 (can be done with `add_year.py`)
