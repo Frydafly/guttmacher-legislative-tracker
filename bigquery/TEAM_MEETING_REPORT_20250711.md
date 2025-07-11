@@ -48,7 +48,7 @@
 ### Analytics Views (7):
 1. `all_historical_bills_unified` - Master view combining all years
 2. `looker_bills_dashboard` - Main dashboard view
-3. `looker_comprehensive_bills` - Detailed bill analysis (materialized table)
+3. `comprehensive_bills_authentic` - Detailed bill analysis (preserves NULL patterns)
 4. `looker_state_summary` - State-level aggregations
 5. `looker_time_series` - Temporal analysis
 6. `looker_topic_analysis` - Policy topic breakdowns

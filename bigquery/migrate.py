@@ -404,11 +404,11 @@ class GuttmacherMigration:
             self.logger.error("Failed to create materialized table: %s", e)
 
     def create_looker_table(self):
-        """Create comprehensive Looker Studio table."""
-        self.logger.info("🔄 Creating Looker Studio table...")
+        """Create authentic comprehensive view that preserves NULL patterns."""
+        self.logger.info("🔄 Creating authentic comprehensive view...")
         
         create_table_sql = f"""
-        CREATE OR REPLACE TABLE `{self.project_id}.{self.dataset_id}.looker_comprehensive_bills` AS
+        CREATE OR REPLACE VIEW `{self.project_id}.{self.dataset_id}.comprehensive_bills_authentic` AS
         WITH enhanced_bills AS (
           SELECT 
             id,
@@ -559,10 +559,125 @@ class GuttmacherMigration:
         try:
             job = self.bq_client.query(create_table_sql)
             job.result(timeout=600)
-            self.logger.info("✅ Created Looker Studio table: looker_comprehensive_bills")
+            self.logger.info("✅ Created authentic comprehensive view: comprehensive_bills_authentic")
+            self.logger.info("    🔍 Preserves NULL patterns showing data evolution")
             return True
         except google_exceptions.GoogleCloudError as e:
             self.logger.error("❌ Failed to create Looker table: %s", e)
+            return False
+
+    def create_raw_data_tracking_view(self):
+        """Create view showing what fields were actually tracked each year."""
+        self.logger.info("🔄 Creating raw data tracking view...")
+        
+        tracking_view_sql = f"""
+        CREATE OR REPLACE VIEW `{self.project_id}.{self.dataset_id}.raw_data_tracking_by_year` AS
+        SELECT 
+          data_year,
+          COUNT(*) as total_bills,
+          
+          -- Basic data collection (should always be tracked)
+          SUM(CASE WHEN state IS NOT NULL THEN 1 ELSE 0 END) as has_state_data,
+          SUM(CASE WHEN bill_number IS NOT NULL THEN 1 ELSE 0 END) as has_bill_number_data,
+          SUM(CASE WHEN description IS NOT NULL THEN 1 ELSE 0 END) as has_description_data,
+          SUM(CASE WHEN history IS NOT NULL THEN 1 ELSE 0 END) as has_history_data,
+          
+          -- Bill classification evolution
+          SUM(CASE WHEN bill_type IS NOT NULL THEN 1 ELSE 0 END) as has_bill_type_data,
+          SUM(CASE WHEN internal_summary IS NOT NULL THEN 1 ELSE 0 END) as has_internal_summary_data,
+          SUM(CASE WHEN notes IS NOT NULL THEN 1 ELSE 0 END) as has_notes_data,
+          SUM(CASE WHEN website_blurb IS NOT NULL THEN 1 ELSE 0 END) as has_website_blurb_data,
+          
+          -- Date tracking evolution  
+          SUM(CASE WHEN introduced_date IS NOT NULL THEN 1 ELSE 0 END) as has_introduced_date_data,
+          SUM(CASE WHEN last_action_date IS NOT NULL THEN 1 ELSE 0 END) as has_last_action_date_data,
+          SUM(CASE WHEN effective_date IS NOT NULL THEN 1 ELSE 0 END) as has_effective_date_data,
+          SUM(CASE WHEN enacted_date IS NOT NULL THEN 1 ELSE 0 END) as has_enacted_date_data,
+          
+          -- Policy category tracking (NULL = not tracked, TRUE/FALSE = tracked)
+          COUNTIF(abortion IS NOT NULL) as tracked_abortion_bills,
+          COUNTIF(abortion = TRUE) as marked_abortion_true,
+          COUNTIF(contraception IS NOT NULL) as tracked_contraception_bills,
+          COUNTIF(contraception = TRUE) as marked_contraception_true,
+          COUNTIF(minors IS NOT NULL) as tracked_minors_bills,
+          COUNTIF(minors = TRUE) as marked_minors_true,
+          COUNTIF(sex_education IS NOT NULL) as tracked_sex_education_bills,
+          COUNTIF(sex_education = TRUE) as marked_sex_education_true,
+          COUNTIF(insurance IS NOT NULL) as tracked_insurance_bills,
+          COUNTIF(insurance = TRUE) as marked_insurance_true,
+          COUNTIF(pregnancy IS NOT NULL) as tracked_pregnancy_bills,
+          COUNTIF(pregnancy = TRUE) as marked_pregnancy_true,
+          COUNTIF(emergency_contraception IS NOT NULL) as tracked_emergency_contraception_bills,
+          COUNTIF(emergency_contraception = TRUE) as marked_emergency_contraception_true,
+          COUNTIF(period_products IS NOT NULL) as tracked_period_products_bills,
+          COUNTIF(period_products = TRUE) as marked_period_products_true,
+          COUNTIF(incarceration IS NOT NULL) as tracked_incarceration_bills,
+          COUNTIF(incarceration = TRUE) as marked_incarceration_true,
+          
+          -- Status field tracking (modern methodology post-2006)
+          COUNTIF(introduced IS NOT NULL) as tracked_introduced_status,
+          COUNTIF(introduced = TRUE) as marked_introduced_true,
+          COUNTIF(enacted IS NOT NULL) as tracked_enacted_status,
+          COUNTIF(enacted = TRUE) as marked_enacted_true,
+          COUNTIF(vetoed IS NOT NULL) as tracked_vetoed_status,
+          COUNTIF(vetoed = TRUE) as marked_vetoed_true,
+          COUNTIF(dead IS NOT NULL) as tracked_dead_status,
+          COUNTIF(dead = TRUE) as marked_dead_true,
+          COUNTIF(pending IS NOT NULL) as tracked_pending_status,
+          COUNTIF(pending = TRUE) as marked_pending_true,
+          
+          -- Intent classification tracking
+          COUNTIF(positive IS NOT NULL) as tracked_positive_intent,
+          COUNTIF(positive = TRUE) as marked_positive_true,
+          COUNTIF(neutral IS NOT NULL) as tracked_neutral_intent,
+          COUNTIF(neutral = TRUE) as marked_neutral_true,
+          COUNTIF(restrictive IS NOT NULL) as tracked_restrictive_intent,
+          COUNTIF(restrictive = TRUE) as marked_restrictive_true,
+          
+          -- Calculate tracking percentages for key fields
+          ROUND(SUM(CASE WHEN bill_type IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as bill_type_tracking_pct,
+          ROUND(SUM(CASE WHEN introduced_date IS NOT NULL THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as introduced_date_tracking_pct,
+          ROUND(COUNTIF(abortion IS NOT NULL) / COUNT(*) * 100, 1) as abortion_tracking_pct,
+          ROUND(COUNTIF(contraception IS NOT NULL) / COUNT(*) * 100, 1) as contraception_tracking_pct,
+          ROUND(COUNTIF(positive IS NOT NULL) / COUNT(*) * 100, 1) as intent_tracking_pct,
+          
+          -- Calculate marking percentages (when tracked, what % was marked TRUE)
+          CASE 
+            WHEN COUNTIF(abortion IS NOT NULL) > 0 
+            THEN ROUND(COUNTIF(abortion = TRUE) / COUNTIF(abortion IS NOT NULL) * 100, 1)
+            ELSE NULL 
+          END as abortion_true_rate_when_tracked,
+          
+          CASE 
+            WHEN COUNTIF(contraception IS NOT NULL) > 0 
+            THEN ROUND(COUNTIF(contraception = TRUE) / COUNTIF(contraception IS NOT NULL) * 100, 1)
+            ELSE NULL 
+          END as contraception_true_rate_when_tracked,
+          
+          CASE 
+            WHEN COUNTIF(introduced IS NOT NULL) > 0 
+            THEN ROUND(COUNTIF(introduced = TRUE) / COUNTIF(introduced IS NOT NULL) * 100, 1)
+            ELSE NULL 
+          END as introduced_true_rate_when_tracked,
+          
+          CASE 
+            WHEN COUNTIF(enacted IS NOT NULL) > 0 
+            THEN ROUND(COUNTIF(enacted = TRUE) / COUNTIF(enacted IS NOT NULL) * 100, 1)
+            ELSE NULL 
+          END as enacted_true_rate_when_tracked
+
+        FROM `{self.project_id}.{self.dataset_id}.all_historical_bills_unified`
+        GROUP BY data_year
+        ORDER BY data_year
+        """
+        
+        try:
+            job = self.bq_client.query(tracking_view_sql)
+            job.result(timeout=300)
+            self.logger.info("✅ Created raw data tracking view: raw_data_tracking_by_year")
+            return True
+        except google_exceptions.GoogleCloudError as e:
+            self.logger.error("❌ Failed to create raw data tracking view: %s", e)
             return False
 
     def create_analytics_views(self):
@@ -622,6 +737,7 @@ class GuttmacherMigration:
         if self.stats["files_processed"] > 0:
             self.create_unified_view()
             self.create_looker_table()
+            self.create_raw_data_tracking_view()
             self.create_analytics_views()
             self.generate_final_report()
             return True

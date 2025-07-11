@@ -167,10 +167,14 @@ class YearlyDataPipeline(GuttmacherMigration):
             self.load_to_bigquery(clean_df, self.table_name)
             
             # Update unified views
-            self.logger.info("Updating unified views")
+            self.logger.info("Updating unified views and tracking")
             self.create_unified_view()
-            self.create_looker_table()
+            self.create_looker_table()  # Creates comprehensive_bills_authentic
             self.create_analytics_views()
+            
+            # Update raw data tracking view
+            self.logger.info("Updating raw data tracking view")
+            self.create_raw_data_tracking_view()
             
             self.logger.info(f"Successfully processed {self.target_year} data")
             return True
