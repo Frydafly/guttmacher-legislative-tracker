@@ -271,10 +271,17 @@ class GuttmacherMigration:
             if col in df_clean.columns:
                 df_clean[col] = pd.to_datetime(df_clean[col], errors='coerce')
 
-        # Clean string fields
-        string_fields = ['state', 'bill_type', 'bill_number', 'description', 'history', 'notes']
+        # Clean string fields (force bill_number to string regardless of input type)
+        string_fields = ['state', 'bill_type', 'bill_number', 'description', 'history', 'notes', 
+                        'website_blurb', 'internal_summary', 'data_source', 'effective_date']
+        
+        # Add all topic fields to string fields
+        topic_fields = [f'topic_{i}' for i in range(1, 11)]
+        string_fields.extend(topic_fields)
+        
         for col in string_fields:
-            if col in df_clean.columns and df_clean[col].dtype == 'object':
+            if col in df_clean.columns:
+                # Always convert to string, handling float64 NaN properly
                 df_clean[col] = df_clean[col].astype(str).str.strip()
                 df_clean[col] = df_clean[col].replace(['nan', 'None', ''], None)
 
