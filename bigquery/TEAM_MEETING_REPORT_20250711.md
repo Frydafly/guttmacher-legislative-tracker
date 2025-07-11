@@ -255,8 +255,29 @@ This analysis shows exactly what data existed in each original database file - b
 
 This raw availability analysis shows that while we have 18 years of data, the **quality and comprehensiveness evolved dramatically** - especially with the 2006 methodology change and 2016 date tracking improvements.
 
+## BigQuery View for Dashboard Integration
+
+✅ **Created**: `raw_data_tracking_by_year` view in BigQuery
+- **Location**: `guttmacher-legislative-tracker.legislative_tracker_historical.raw_data_tracking_by_year`
+- **Purpose**: Shows what was actually tracked vs what was marked TRUE each year
+- **Key metrics**:
+  - **Tracking %**: Percentage of bills with field tracked (NULL vs NOT NULL)
+  - **True Rate When Tracked**: Of tracked bills, percentage marked TRUE
+- **Usage**: Ready for Looker Studio dashboard integration
+
+**Sample Data**:
+```
+Year | Bills | BillType% | IntroDate% | Abortion% | AbortTrue% | Contracept% | ContractTrue%
+2002 |  177 |     0.0% |      0.0% |    100.0% | 29.4%    |     100.0% | 51.4%      
+2006 | 1099 |    99.9% |      0.0% |    100.0% | 32.1%    |     100.0% | N/A        
+2016 | 1039 |    98.7% |    100.0% |    100.0% | 42.1%    |     100.0% | 20.6%      
+2022 | 1848 |    98.1% |     99.7% |    100.0% | 37.9%    |     100.0% | 7.5%    
+```
+
+This shows the evolution: bill types begin 2006, introduced dates begin 2016, contraception tracking gaps 2006-2008.
+
 ## Next Steps
 1. Fix data issues for 2014, 2015, and 2024 (can be done with `add_year.py`)
-2. Connect Looker Studio to the created views
+2. Connect Looker Studio to `raw_data_tracking_by_year` view
 3. Begin historical analysis with 18 years of clean data
-4. Consider creating additional specialized analytics views as needed
+4. Use the view to create dashboards showing field evolution and data patterns
