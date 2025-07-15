@@ -218,11 +218,24 @@ class GuttmacherMigration:
         all_standard_fields.discard('bigquery_types')
         
         # Initialize fields with appropriate defaults
-        # Status fields should default to FALSE, category fields should default to NULL
+        # Status fields should default to FALSE, policy/intent categories should default to NULL when not tracked
         status_fields = {
             'introduced', 'seriously_considered', 'passed_first_chamber', 
             'passed_second_chamber', 'enacted', 'vetoed', 'dead', 'pending'
         }
+        
+        # Policy category fields should be NULL when not tracked (not FALSE)
+        policy_category_fields = {
+            'abortion', 'contraception', 'emergency_contraception', 'minors', 
+            'pregnancy', 'refusal', 'sex_education', 'insurance', 'appropriations',
+            'fetal_issues', 'fetal_tissue', 'incarceration', 'period_products', 'stis'
+        }
+        
+        # Intent fields should be NULL when not tracked (not FALSE)
+        intent_fields = {'positive', 'neutral', 'restrictive'}
+        
+        # Bill type fields should be NULL when not tracked
+        bill_type_fields = {'legislation', 'resolution', 'ballot_initiative', 'constitutional_amendment'}
         
         for field in all_standard_fields:
             field_type = self.field_mappings.get('bigquery_types', {}).get(field, 'STRING')
@@ -230,7 +243,8 @@ class GuttmacherMigration:
                 if field in status_fields:
                     standardized_data[field] = False  # Status fields default to FALSE
                 else:
-                    standardized_data[field] = None   # Category fields default to NULL when not tracked
+                    # All other boolean fields (policy, intent, bill type) default to NULL when not tracked
+                    standardized_data[field] = None
             else:
                 standardized_data[field] = None
         
