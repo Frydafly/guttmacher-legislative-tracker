@@ -149,16 +149,23 @@ class GuttmacherMigration:
 
     def extract_year_from_filename(self, db_path: Path) -> Optional[int]:
         """Extract year from database filename."""
-        patterns = [r"(\d{4})", r"\b(\d{2})-\d{2}-(\d{2})\b"]
-        for pattern in patterns:
-            match = re.search(pattern, db_path.name)
-            if match:
-                year_str = match.group(1)
-                year = int(year_str)
-                if len(year_str) == 2:
-                    year = year + 2000 if year <= 30 else year + 1900
-                if 2000 <= year <= 2030:
-                    return year
+        # Try MM-DD-YY format first (for files like 12-15-23.accdb)
+        mm_dd_yy_match = re.search(r"\b\d{2}-\d{2}-(\d{2})\b", db_path.name)
+        if mm_dd_yy_match:
+            year_str = mm_dd_yy_match.group(1)
+            year = int(year_str)
+            # Convert 2-digit year to 4-digit
+            year = year + 2000 if year <= 30 else year + 1900
+            if 2000 <= year <= 2030:
+                return year
+        
+        # Try standard 4-digit year format
+        four_digit_match = re.search(r"(\d{4})", db_path.name)
+        if four_digit_match:
+            year = int(four_digit_match.group(1))
+            if 2000 <= year <= 2030:
+                return year
+        
         return None
 
     def get_tables_from_db(self, db_path: Path) -> List[str]:
