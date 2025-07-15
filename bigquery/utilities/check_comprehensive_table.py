@@ -9,13 +9,13 @@ print("📊 CHECKING COMPREHENSIVE BILLS TABLE FOR CSV EXPORT")
 print("=" * 70)
 
 # Check what's actually in the comprehensive table
-query = """
+query = f"""
 SELECT *
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.looker_comprehensive_bills`
+FROM `{os.getenv('GCP_PROJECT_ID')}.legislative_tracker_historical.comprehensive_bills_authentic`
 LIMIT 5
 """
 
-print("🔍 Sample data from looker_comprehensive_bills:")
+print("🔍 Sample data from comprehensive_bills_authentic:")
 try:
     results = client.query(query).result()
     
@@ -28,19 +28,19 @@ try:
             print(f"{i:2d}. {col}")
         
         # Get total count
-        count_query = "SELECT COUNT(*) as total FROM `guttmacher-legislative-tracker.legislative_tracker_historical.looker_comprehensive_bills`"
+        count_query = f"SELECT COUNT(*) as total FROM `{os.getenv('GCP_PROJECT_ID')}.legislative_tracker_historical.comprehensive_bills_authentic`"
         count_result = client.query(count_query).result()
         for row in count_result:
             print(f"\n📊 Total rows: {row.total:,}")
     
 except Exception as e:
-    print(f"❌ Error accessing looker_comprehensive_bills: {e}")
+    print(f"❌ Error accessing comprehensive_bills_authentic: {e}")
     print("\n🔄 Checking all_historical_bills_unified instead...")
     
     # Fallback to unified view
-    query2 = """
+    query2 = f"""
     SELECT *
-    FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
+    FROM `{os.getenv('GCP_PROJECT_ID')}.legislative_tracker_historical.all_historical_bills_unified`
     LIMIT 3
     """
     
@@ -54,7 +54,7 @@ except Exception as e:
                 print(f"{i:2d}. {col}")
             
             # Get total count
-            count_query2 = "SELECT COUNT(*) as total FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`"
+            count_query2 = f"SELECT COUNT(*) as total FROM `{os.getenv('GCP_PROJECT_ID')}.legislative_tracker_historical.all_historical_bills_unified`"
             count_result2 = client.query(count_query2).result()
             for row in count_result2:
                 print(f"\n📊 Total rows: {row.total:,}")
@@ -68,7 +68,7 @@ print(f"{'='*70}")
 print("""
 For your team's Google Sheets comprehensive view, I recommend:
 
-🎯 PRIMARY OPTION: `looker_comprehensive_bills`
+🎯 PRIMARY OPTION: `comprehensive_bills_authentic`
    - Pre-built for analysis and dashboards
    - Includes calculated fields and clean structure
    - Optimized for non-technical users
@@ -80,7 +80,7 @@ For your team's Google Sheets comprehensive view, I recommend:
 
 ⚠️  GOOGLE SHEETS LIMITS:
    - Maximum 10 million cells (roughly 16k rows × 600+ columns)
-   - With 16,323 bills, you may need to export by year ranges
+   - With 20,221 bills, you may need to export by year ranges
    - Consider filtering to essential columns only
 
 💡 EXPORT STRATEGY:
@@ -115,7 +115,7 @@ SELECT
   positive,
   neutral,
   restrictive
-FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
+FROM `{project}.legislative_tracker_historical.all_historical_bills_unified`
 WHERE data_year >= 2020  -- Recent years for manageable size
 ORDER BY data_year DESC, state, bill_number
 """)

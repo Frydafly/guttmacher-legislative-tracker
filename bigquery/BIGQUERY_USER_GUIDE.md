@@ -14,18 +14,17 @@ This guide helps team members access and explore the Guttmacher legislative data
 Once in BigQuery, you'll see a sidebar on the left:
 1. Look for **guttmacher-legislative-tracker** project
 2. Expand it to see **legislative_tracker_historical** dataset
-3. You'll see 25 tables - these contain all our legislative data!
+3. You'll see 30+ tables - these contain all our legislative data!
 
 ## Key Tables to Know
 
-### For Quick Analysis (Start Here):
-- **`looker_bills_dashboard`** - Main dashboard data, easy to explore
-- **`looker_state_summary`** - State-by-state summaries
-- **`looker_time_series`** - Trends over time
+### ⭐ **Start Here** (Recommended):
+- **`comprehensive_bills_authentic`** - Main dashboard view with all enhancements
+- **`tracking_completeness_matrix`** - Shows what data is available by year (✅/⚠️/❌)
 
 ### For Detailed Research:
-- **`all_historical_bills_unified`** - Every bill from 2002-2022 (16,323 bills)
-- **`looker_comprehensive_bills`** - Detailed bill information
+- **`all_historical_bills_unified`** - Every bill from 2002-2023 (20,221 bills)
+- **`realistic_field_tracking_by_year`** - Understanding data availability evolution
 
 ### Individual Years:
 - **`historical_bills_2002`** through **`historical_bills_2022`** - One table per year

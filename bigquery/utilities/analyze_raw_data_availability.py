@@ -62,7 +62,7 @@ SELECT
 FROM `{project}.legislative_tracker_historical.all_historical_bills_unified`
 GROUP BY data_year
 ORDER BY data_year
-""".replace("{project}", os.getenv('GCP_PROJECT_ID'))
+""".format(project=os.getenv('GCP_PROJECT_ID'))
 
 results = client.query(query).to_dataframe()
 
