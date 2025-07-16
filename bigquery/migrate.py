@@ -45,7 +45,7 @@ class GuttmacherMigration:
         load_dotenv()
         
         self.project_id = os.getenv("GCP_PROJECT_ID")
-        self.dataset_id = "legislative_tracker_historical"
+        self.dataset_id = os.getenv("BQ_DATASET_ID", "legislative_tracker_historical")
         
         if not self.project_id or self.project_id == "your-actual-project-id":
             raise ValueError("Please set GCP_PROJECT_ID in .env file")
