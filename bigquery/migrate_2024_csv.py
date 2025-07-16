@@ -177,18 +177,15 @@ class CSV2024Migration:
                 if not isinstance(value, pd.Series):
                     standardized_data[key] = [value] * len(df)
 
-        # Create DataFrame and remove invalid columns
+        # Create DataFrame and add missing columns for schema compatibility
         result_df = pd.DataFrame(standardized_data)
 
-        # Remove columns with invalid names for BigQuery
-        invalid_columns = []
-        for col in result_df.columns:
-            if not isinstance(col, str) or not col.replace('_', '').isalnum() or col[0].isdigit():
-                invalid_columns.append(col)
-
-        if invalid_columns:
-            self.logger.warning(f"Removing invalid column names: {invalid_columns}")
-            result_df = result_df.drop(columns=invalid_columns)
+        # Add the invalid columns that exist in other tables for schema compatibility
+        # These columns shouldn't exist but are in the historical data
+        compatibility_columns = ['2005', '2006_2007', '2008_2014', '2015_2018', '2019_2024']
+        for col in compatibility_columns:
+            if col not in result_df.columns:
+                result_df[col] = None
 
         return result_df
 
