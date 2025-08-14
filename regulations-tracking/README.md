@@ -1,26 +1,47 @@
 # Regulations Tracking
 
-This folder contains the planning and data for implementing regulations tracking in the Guttmacher Legislative Tracker system.
+This folder contains the implementation files for adding regulations tracking to the Guttmacher Legislative Tracker system.
 
-## Contents
+## Key Files
 
-- **`2025 tracked regs.csv`** - Current CSV file with 96 regulations being tracked across 29 states
-- **`REGULATIONS_PROPOSAL_ENRICHED.md`** - Updated proposal document incorporating feedback from Candace Gibson
-- **`Regulations Tracking Proposal.docx`** - Original proposal document with comments
+### Data Files (Ready for Import)
+- **`regulations_airtable_import.csv`** ✅ - 96 regulations ready for Airtable import
+- **`agencies_complete.csv`** ✅ - 62 agencies with full categorization
+- **`2025 tracked regs.csv`** - Original source data from StateNet
 
-## Quick Summary
+### Documentation
+- **`REGULATIONS_TRACKING_PROPOSAL.md`** - Complete proposal with database structure
+- **`IMPLEMENTATION_CHECKLIST.md`** - Step-by-step implementation guide
 
-We're adding regulations tracking to complement the existing bills tracking system. The implementation will:
-- Track state regulations only (not federal or local)
-- Focus on priority agencies: Health Departments, Medicaid, Medical/Pharmacist Licensing Boards, Insurance Commissioners
-- Use a similar structure to the Bills table with regulation-specific additions
-- Import the 96 regulations from the CSV as starting data
+### Scripts
+- **`transform_final_import.py`** - Transforms raw CSV to exact Airtable format
 
-## Next Steps
+## Database Structure
 
-1. Create new Airtable tables (Regulations and StateNet Regulations Import)
-2. Import initial data from CSV
-3. Build automation scripts following the bills import pattern
-4. Train team on regulation-specific workflows
+We're creating three new tables in the existing Bills Airtable base:
 
-See `REGULATIONS_PROPOSAL_ENRICHED.md` for full implementation details.
+1. **Regulations** - Main table mirroring Bills structure with regulation-specific fields
+2. **Agencies** - Lookup table for agency hierarchy and categorization  
+3. **StateNet Regulations Import** - Staging table for raw imports
+
+## Key Design Decisions
+
+- **Same base as Bills** - Enables cross-referencing and unified reporting
+- **Linked records instead of checkboxes** - Proper relational structure matching Bills
+- **Agency hierarchy** - Separate table for managing agency relationships
+- **Formula-generated RegID** - `CONCATENATE(State,"-REG-",Number,"-",Year)`
+
+## Import Process
+
+1. Import `agencies_table.csv` to create Agencies table
+2. Import `regulations_full_import.csv` to Regulations table
+3. Set up RegID formula field
+4. Link agencies and policy categories
+5. Configure automation for ongoing imports
+
+## What's Ready vs What Needs Answers
+
+See `IMPLEMENTATION_CHECKLIST.md` for detailed breakdown of:
+- 🟢 What we can implement now
+- 🔴 Critical questions needing answers
+- 🟡 Nice-to-have clarifications

@@ -8,24 +8,53 @@ Based on analysis of the 96 regulations currently being tracked in CSV format, I
 
 - 96 regulations across 29 states  
 - All are type "REGULATION" (vs bills which have H/S/etc.)  
-- 57 regulations tagged with "Pregnancy" policy area  
+- 62 unique issuing agencies across multiple categories
+- 79 already adopted, 7 proposed, 5 in comment period
 - 32 newly tracked, 92 with status changes  
-- Similar policy categorization to bills (Abortion, FamilyPlanning, Insurance, etc.)  
-- Multiple issuing agencies (Health departments, licensing boards, insurance commissioners)  
+- Policy areas include: Misc (35), lactation (13), Doula (9), MaternalMortality (7), plus traditional categories
+- Multiple issuing agencies (Health departments, licensing boards, insurance commissioners, community colleges)  
 - Both emergency and standard regulations present
 
-## Recommended Structure: New "Regulations" Table
+## Recommended Database Structure
 
-### Core Fields (Mirroring Bills Table)
+### Design Principles
+1. **Relational Structure**: Use linked records instead of checkbox fields for better data integrity
+2. **Hierarchy Support**: Separate tables for entities with hierarchical relationships (e.g., Agencies)
+3. **Consistent with Bills**: Mirror Bills table structure where applicable for unified reporting
+4. **Formula Fields**: Use Airtable formulas for calculated fields like RegID
+
+### New Tables to Create
+
+#### 1. "Regulations" Table (Main Table)
+The primary table for tracking regulations, designed to mirror Bills table structure with regulation-specific adaptations.
+
+#### 2. "Agencies" Table (Lookup Table)
+Manages agency information with proper categorization and hierarchy:
+- **Agency Name** (Primary field)
+- **Agency Type** (Single Select): Health Department, Medicaid Agency, Insurance Commissioner, Professional Licensing Board, Other
+- **State** (Single Select)
+- **Priority Level** (Single Select): High, Medium, Low
+- **Abbreviation** (Text)
+- **Full Name** (Long Text)
+- **Parent Agency** (Link to Agencies) - for sub-agencies
+- **Contact Info** (Long Text)
+- **Regulations** (Link to Regulations) - backlink to all regulations
+
+#### 3. "StateNet Regulations Import" Table
+Staging table for raw imports from StateNet, matching CSV structure exactly.
+
+### Regulations Table - Detailed Field Structure
+
+#### Core Fields (Mirroring Bills Table)
 
 **Identification:**
 
-- **RegID** (Formula): `{State}-REG-{Number}-{Year}`  
-- **State** (Single Select) \- use same state options as Bills  
-- **Number** (Number) \- regulation number  
-- **Year** (Number) \- year of regulation  
-- **Title** (Long Text) \- full regulation title  
-- **Description** (Rich Text) \- from StateNet "Summary"
+- **Reg-ID** (Formula): `CONCATENATE(State,"-REG-",Number,"-",Year)` - auto-generated
+- **State** (Single Select) - use same state options as Bills  
+- **Number** (Number) - regulation number  
+- **Year** (Number) - year of regulation  
+- **Title** (Long Text) - full regulation title  
+- **Description** (Rich Text) - from StateNet "Summary"
 
 **Status & History:**
 
@@ -48,13 +77,18 @@ Based on analysis of the 96 regulations currently being tracked in CSV format, I
 - **Effective Date** (Date)  
 - **Expiration Date** (Date) \- for emergency regulations
 
-**Policy Classification (Same as Bills):**
+**Policy Classification (Linked Structure - Same as Bills):**
 
-- **Intent** (Multiple Select) \- Protective/Restrictive/Neutral  
-- **Specific Policies Record Link** \- link to existing policies table  
-- **Policy Categories** (Lookup) \- from linked policies  
-- **Specific Policies (access)** (Multiple Select) \- same options as bills  
-- **Policy Categories (Access)** (Multiple Select) \- for StateNet imports
+- **Intent (access)** (Single Select) - Protective/Restrictive/Neutral - assigned during review
+- **Specific Policies Record Link** (Link to another record) - links to Policy Categories table
+- **Policy Categories** (Lookup from link) - auto-populated from linked policy
+- **Subcategories** (Lookup from link) - auto-populated from linked policy
+- **Headers** (Lookup from link) - auto-populated from linked policy
+- **Specific Policies** (Lookup from link) - auto-populated from linked policy
+- **Intent** (Lookup from link) - auto-populated from linked policy
+- **Category Intent** (Lookup from link) - auto-populated from linked policy
+- **Specific Policies (access)** (Long Text) - comma-separated list for initial import/mapping
+- **Policy Categories (Access)** (Long Text) - comma-separated list for initial import/mapping
 
 ### Regulation-Specific Fields
 
@@ -258,10 +292,24 @@ Similar to existing StateNet Raw Import, with all CSV fields mapped directly.
 - Should we import all 96 regulations from the CSV as a starting point? **Agree**  
 - Do you need historical regulation data beyond what's in the current CSV? **I don't think we need historical data beyond what's in the current CSV.**
 
-## Next Steps
+## Implementation Status (January 14, 2025)
 
-1. **Confirm table structure** \- I can create the tables once you approve the structure  
-2. **Build import automation** \- Following the same pattern as bills import  
-3. **Test with sample data** \- Import a few regulations to test workflow  
-4. **Train team** \- Quick session on any regulation-specific processes
+### ✅ Completed
+- Analyzed 96 regulations from StateNet CSV
+- Created data transformation scripts
+- Generated import-ready files with all data properly formatted
+- Extracted 62 unique agencies with categorization
+- Captured all specific policies (Misc, lactation, Doula, MaternalMortality, etc.)
+- Resolved data quality issues (duplicates, date formatting)
+
+### 📁 Files Ready for Import
+1. **`regulations_airtable_import.csv`** - All 96 regulations matching exact Airtable structure
+2. **`agencies_complete.csv`** - All 62 agencies with type categorization and priority levels
+
+### 🚀 Ready to Implement
+1. **Import agencies table** first (establishes lookup relationships)
+2. **Import regulations data** with all fields pre-formatted
+3. **Configure field types** and formula for Reg-ID
+4. **Link records** to agencies and policy categories
+5. **Set up automation** following Bills import pattern
 
