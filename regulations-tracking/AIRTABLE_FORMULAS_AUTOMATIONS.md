@@ -1,6 +1,8 @@
-# Airtable Formulas & Automations Guide
+# Airtable Formulas & Automations Setup Guide
 
-**Purpose**: Set up Airtable to automatically maintain and update regulation data without Python scripts
+**Purpose**: Set up automations and formulas now that data import is complete
+**Status**: Ready to implement in Airtable
+
 
 ## 🔢 Recommended Formula Fields
 
