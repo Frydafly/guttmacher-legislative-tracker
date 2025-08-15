@@ -21,15 +21,10 @@ Airtable CSV imports will **NOT** create new fields automatically. You must manu
 - **Location**: Add after "Effective Date" field
 - **Purpose**: Tracks when emergency rules expire (auto-calculated as 180 days from emergency adoption)
 
-### 3. **Intent (access)** (REQUIRED for policy analysis)
-- **Field Type**: Single Select
-- **Options to add**:
-  - Protective
-  - Restrictive
-  - Neutral
-  - Mixed
-- **Location**: Add near other policy fields
-- **Note**: Will be empty initially, needs manual review
+### ~~3. Intent (access)~~ - NOT NEEDED
+- **SKIP THIS**: Intent comes automatically from Policy Categories link
+- The linked Specific Policies records already contain Intent
+- It will populate through lookups when you link policies
 
 ### 4. **Supersedes** (OPTIONAL but valuable)
 - **Field Type**: Link to another record (Regulations table)

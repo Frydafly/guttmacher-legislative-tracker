@@ -82,32 +82,25 @@ IF(
 )
 ```
 
-### 6. **Needs Review Flag** (NEW)
+### 6. **Priority Alert** (NEW - Better than Needs Review Flag)
 **Field Type**: Formula
-**Purpose**: Identify records needing attention
+**Purpose**: Shows what needs immediate attention
 ```
 IF(
-  OR(
-    BLANK({Intent (access)}),
-    AND({Regulation Type} = "Emergency Rule", {Days Until Expiration} < 30),
+  AND({Regulation Type} = "Emergency Rule", {Days Until Expiration} < 30),
+  "🔴 Expiring Soon",
+  IF(
     AND({Current Status} = "Comment Period", {Comment Period Days Remaining} < 7),
-    {Review Status} = "Needs Review"
-  ),
-  "⚠️ Needs Attention",
-  "✓"
+    "🟡 Comment Closing",
+    IF(
+      BLANK({Specific Policies Record Link}),
+      "🔵 Link Policies",
+      ""
+    )
+  )
 )
 ```
-
-### 7. **Policy Count** (NEW)
-**Field Type**: Formula
-**Purpose**: Count number of policies for complexity tracking
-```
-IF(
-  {Specific Policies (access)},
-  LEN({Specific Policies (access)}) - LEN(SUBSTITUTE({Specific Policies (access)}, ",", "")) + 1,
-  0
-)
-```
+**Note**: This is more specific than Review Status - shows WHY something needs attention
 
 ## 🤖 Essential Automations to Create
 
@@ -117,9 +110,9 @@ IF(
 - Days Until Expiration = 30
 
 **Action**: 
-- Send email to team
-- Update Review Status to "Needs Review"
-- Add note to Internal Notes with timestamp
+- Update Review Status to "Urgent"
+- Add note to Internal Notes: "⚠️ Emergency rule expires in 30 days - {Expiration Date}"
+- Create task in project management system (if integrated)
 
 ### 2. **Comment Period Ending Alert**
 **Trigger**: When record matches conditions
@@ -127,17 +120,17 @@ IF(
 - Comment Period Days Remaining = 7
 
 **Action**:
-- Send email to policy team
-- Create task in project management system
-- Update Review Status to "Urgent Review"
+- Update Review Status to "Urgent"
+- Add note to Internal Notes: "📝 Comment period ends {Comment Period End}"
+- Update Priority Alert field (if using formula)
 
 ### 3. **New Regulation Assignment**
 **Trigger**: When record is created
 
 **Action**:
 - Set Review Status to "Needs Review"
-- Assign to team member based on State or Agency Type
-- Send Slack notification
+- Assign to team member based on State or Agency Type (if using collaborator field)
+- Add timestamp to Internal Notes: "Added {Date}"
 
 ### 4. **Status Change Logger**
 **Trigger**: When {Current Status} is updated
@@ -162,14 +155,15 @@ IF(
 - Update Current Status to "Expired"
 - Add note to Internal Notes: "Auto-expired on {Date}"
 
-### 6. **Intent Assignment Reminder**
+### 6. **Policy Linking Check**
 **Trigger**: Weekly on Monday
 
-**Condition**: Intent (access) is empty
+**Condition**: Specific Policies Record Link is empty
 
 **Action**: 
-- Send digest email listing all regulations without Intent
-- Group by State and Agency Type
+- Update Review Status to "Needs Policy Link"
+- Create filtered view showing all unlinked regulations
+- Optional: Send Slack notification with count of unlinked records
 
 ### 7. **Supersedes Relationship Detector**
 **Trigger**: When new record created
@@ -181,6 +175,27 @@ IF(
 - Earlier Year
 
 **Suggest**: Potential supersedes relationships for review
+
+## 🔗 Managing the Supersedes Relationship (Simplified!)
+
+You only need ONE linked record field to track both directions:
+
+### Create "Superseded By" field:
+- **Field Type**: Link to another record (Regulations table)
+- **Purpose**: Link to the newer regulation that replaces this one
+- **Auto-creates reverse field**: Called "Regulations" by default
+
+### Rename the reverse field to "Supersedes":
+- **What it shows**: Which older regulations this one replaces
+- **Why this works**: One link field gives you both directions automatically!
+
+### Example:
+- Reg A (2023) is **Superseded By** → Reg B (2024)
+- Reg B (2024) **Supersedes** → Reg A (2023) [shown in reverse field]
+
+### Best Practice:
+- Just create "Superseded By" and rename its reverse to "Supersedes"
+- Don't create two separate link fields - it's redundant and confusing!
 
 ## 📊 Recommended Views with Filters
 
@@ -194,10 +209,11 @@ Filter: `{Current Status} = "Comment Period"`
 Sort: `{Comment Period End}` (ascending)
 Show: Comment period countdown prominently
 
-### 3. **Needs Policy Review**
-Filter: `{Intent (access)} = BLANK()`
+### 3. **Needs Policy Linking**
+Filter: `{Specific Policies Record Link} = BLANK()`
 Group by: `{Agency Type}`
 Sort: `{Adopted Date}` (newest first)
+Helper column: Show `{Specific Policies (access)}` to guide linking
 
 ### 4. **Expired Regulations**
 Filter: `{Legal Status} = "Expired"`
@@ -289,18 +305,20 @@ IF(
 
 ## 🚨 Critical Automations Priority
 
-**Must Have**:
-1. Emergency Rule Expiration Alert (30-day warning)
-2. Auto-Expire Emergency Rules (daily check)
-3. Comment Period Ending Alert (7-day warning)
+**Must Have** (No emails, just status updates):
+1. Emergency Rule Expiration Alert - Updates Review Status
+2. Auto-Expire Emergency Rules - Daily status check
+3. Comment Period Ending Alert - Flags urgent items
 
 **Should Have**:
-4. New Regulation Assignment
-5. Intent Assignment Reminder
+4. New Regulation Assignment - Sets initial status
+5. Policy Linking Check - Weekly review flag
 
 **Nice to Have**:
-6. Status Change Logger
-7. Supersedes Relationship Detector
+6. Status Change Logger - Audit trail
+7. Supersedes Relationship Detector - Finds relationships
+
+**Note**: All automations update fields/status rather than sending emails
 
 ## 📝 Implementation Order
 

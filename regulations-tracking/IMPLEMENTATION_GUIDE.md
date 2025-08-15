@@ -23,20 +23,15 @@ This guide walks you through implementing the enhanced regulations tracking syst
    - Field Type: `Date`
    - Purpose: Tracks when emergency rules expire (auto-calculated as 180 days)
 
-3. **Intent (access)**
-   - Field Type: `Single Select`
-   - Options: `Protective`, `Restrictive`, `Neutral`, `Mixed`
-   - Purpose: Categorizes regulatory impact (needs manual review)
+3. ~~**Intent (access)**~~ (SKIP - Intent comes from Policy Categories link)
+   - Intent is automatically populated through the Specific Policies Record Link
+   - No need to create this field manually
 
-4. **Supersedes** (Optional but valuable)
-   - Field Type: `Link to another record`
-   - Links to: `Regulations` (same table)
-   - Purpose: Links to older regulation this one replaces
-
-5. **Superseded By** (Optional but valuable)
+4. **Superseded By** (Optional but valuable)
    - Field Type: `Link to another record`
    - Links to: `Regulations` (same table)
    - Purpose: Links to newer regulation that replaces this one
+   - **Important**: Rename the auto-created reverse field from "Regulations" to "Supersedes"
 
 ### Step 2: Import the Enhanced Data
 
@@ -107,10 +102,10 @@ After import, you should see:
 - Check expiration dates
 - Set alerts for rules expiring soon
 
-### Priority 2: Assign Intent
-- Review each regulation
-- Assign `Protective`, `Restrictive`, or `Neutral`
-- Use policy team expertise
+### Priority 2: Link to Policy Categories
+- Link each regulation to appropriate Specific Policies records
+- Intent will automatically populate from the linked policies
+- Use "Specific Policies (access)" field as guide for which policies to link
 
 ### Priority 3: Link Related Bills
 - Research enabling legislation
