@@ -51,8 +51,8 @@ The Supersedes Relationship Detector is an automated script for the Guttmacher R
 1. **Trigger**: Fires when a regulation is created or key fields are updated
 2. **Filter Candidates**: Finds regulations from the same state and agency
 3. **Year Check**: Only considers regulations from earlier years (potential predecessors)
-4. **Title Similarity**: Extracts keywords (4+ characters) and checks for 50%+ match
-5. **Report Results**: Adds findings to Internal Notes field
+4. **Title Similarity**: Extracts keywords (4+ characters) and checks for 33%+ match
+5. **Report Results**: Writes findings to dedicated Supersedes Detection field
 
 ### Example Detection
 
@@ -87,11 +87,11 @@ const CONFIG = {
         YEAR: 'Year',
         
         // Relationships
-        ISSUING_AGENCY: 'Issuing Agency',
+        ISSUING_AGENCY: 'Issuing Agency Link',
         TITLE: 'Title',
         
         // Output
-        INTERNAL_NOTES: 'Internal Notes',
+        SUPERSEDES_DETECTION: 'Supersedes Detection',  // Dedicated field for results
         
         // Optional link fields (if using)
         SUPERSEDED_BY: 'Superseded By',
@@ -101,7 +101,7 @@ const CONFIG = {
     // Matching thresholds
     THRESHOLDS: {
         MIN_KEYWORD_LENGTH: 4,      // Minimum word length to consider
-        MATCH_PERCENTAGE: 0.5       // 50% of keywords must match
+        MATCH_PERCENTAGE: 0.33      // 33% of keywords must match
     }
 };
 ```
@@ -114,10 +114,10 @@ const CONFIG = {
 |-----------|------|---------|
 | `Reg-ID` | Formula | Unique identifier for each regulation |
 | `State` | Single Select | State where regulation applies |
-| `Year` | Number | Year of regulation |
-| `Issuing Agency` | Link to Agencies | Agency that issued the regulation |
+| `Year` | Single Select or Number | Year of regulation |
+| `Issuing Agency Link` | Link to Agencies | Agency that issued the regulation |
 | `Title` | Single Line Text | Regulation title |
-| `Internal Notes` | Long Text | Where suggestions are written |
+| `Supersedes Detection` | Long Text | **NEW FIELD** - Dedicated field for detection results |
 
 ### Optional Fields for Manual Linking
 
@@ -134,13 +134,13 @@ const CONFIG = {
 // More strict matching (fewer false positives)
 const THRESHOLDS = {
     MIN_KEYWORD_LENGTH: 5,      // Longer words only
-    MATCH_PERCENTAGE: 0.75      // 75% match required
+    MATCH_PERCENTAGE: 0.5       // 50% match required
 };
 
-// More lenient matching (catch more relationships)
+// Current default (balanced)
 const THRESHOLDS = {
-    MIN_KEYWORD_LENGTH: 3,      // Include shorter words
-    MATCH_PERCENTAGE: 0.33      // 33% match sufficient
+    MIN_KEYWORD_LENGTH: 4,      // Standard word length
+    MATCH_PERCENTAGE: 0.33      // 33% match (catches more relationships)
 };
 ```
 
@@ -224,9 +224,9 @@ const candidates = query.records.filter(record => {
 ### Review Process
 
 1. **Weekly Review**
-   - Check Internal Notes for new suggestions
+   - Check Supersedes Detection field for suggestions
    - Verify and create actual links for confirmed relationships
-   - Clear processed suggestions from Internal Notes
+   - Field auto-updates on next run (no manual clearing needed)
 
 2. **Manual Override**
    - Always allow manual linking to override automation
@@ -249,8 +249,9 @@ const candidates = query.records.filter(record => {
 - Script runs in Airtable's sandboxed environment
 - No external API calls
 - Processes one record at a time (triggered by changes)
-- Read-only except for Internal Notes field
+- Only writes to the dedicated Supersedes Detection field
 - Typical execution time: 1-3 seconds
+- Bulk version available for processing all records at once
 
 ## 📞 Support
 
@@ -260,8 +261,9 @@ const candidates = query.records.filter(record => {
 
 ## 📝 Version History
 
-- **v1.0** (Current): Initial release with keyword-based matching
+- **v1.1** (Current): Dedicated field for detection results, 33% match threshold
+- **v1.0**: Initial release with keyword-based matching
 
 ---
 
-*Last updated: January 2025*
+*Last updated: August 2025*

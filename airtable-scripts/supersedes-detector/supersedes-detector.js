@@ -25,7 +25,7 @@ const CONFIG = {
         TITLE: 'Title',
         
         // Output
-        INTERNAL_NOTES: 'Internal Notes',
+        SUPERSEDES_DETECTION: 'Supersedes Detection',  // Create this Long Text field in Airtable
         
         // Optional link fields (if using manual linking)
         SUPERSEDED_BY: 'Superseded By',
@@ -35,7 +35,7 @@ const CONFIG = {
     // Matching thresholds
     THRESHOLDS: {
         MIN_KEYWORD_LENGTH: 4,      // Minimum word length to consider
-        MATCH_PERCENTAGE: 0.5,       // 50% of keywords must match
+        MATCH_PERCENTAGE: 0.33,      // 33% of keywords must match (lowered from 50%)
         MAX_YEAR_DIFF: 5            // Only look back 5 years for matches
     }
 };
@@ -85,15 +85,15 @@ async function detectSupersedes() {
                 CONFIG.FIELDS.STATE,
                 CONFIG.FIELDS.YEAR,
                 CONFIG.FIELDS.ISSUING_AGENCY,
-                CONFIG.FIELDS.TITLE,
-                CONFIG.FIELDS.INTERNAL_NOTES
+                CONFIG.FIELDS.TITLE
             ]
         });
         
         // Extract current record values
         const currentState = currentRecord.getCellValue(CONFIG.FIELDS.STATE);
         const currentAgency = currentRecord.getCellValue(CONFIG.FIELDS.ISSUING_AGENCY);
-        const currentYear = currentRecord.getCellValue(CONFIG.FIELDS.YEAR);
+        const currentYearRaw = currentRecord.getCellValue(CONFIG.FIELDS.YEAR);
+        const currentYear = typeof currentYearRaw === 'object' ? currentYearRaw.name : currentYearRaw;
         const currentTitle = currentRecord.getCellValue(CONFIG.FIELDS.TITLE);
         
         // Validation - ensure we have required fields
@@ -103,7 +103,8 @@ async function detectSupersedes() {
         }
         
         // Calculate year range for efficiency
-        const minYear = currentYear - CONFIG.THRESHOLDS.MAX_YEAR_DIFF;
+        const currentYearNum = parseInt(currentYear);
+        const minYear = currentYearNum - CONFIG.THRESHOLDS.MAX_YEAR_DIFF;
         
         // Find candidate regulations from same state/agency
         const candidates = query.records.filter(record => {
@@ -112,17 +113,23 @@ async function detectSupersedes() {
             
             const recordState = record.getCellValue(CONFIG.FIELDS.STATE);
             const recordAgency = record.getCellValue(CONFIG.FIELDS.ISSUING_AGENCY);
-            const recordYear = record.getCellValue(CONFIG.FIELDS.YEAR);
+            const recordYearRaw = record.getCellValue(CONFIG.FIELDS.YEAR);
+            const recordYear = typeof recordYearRaw === 'object' ? recordYearRaw.name : recordYearRaw;
             
-            // Must be same state
-            if (recordState !== currentState) return false;
+            // Must be same state (handle select field objects)
+            const currentStateValue = typeof currentState === 'object' ? currentState.name : currentState;
+            const recordStateValue = typeof recordState === 'object' ? recordState.name : recordState;
+            if (recordStateValue !== currentStateValue) return false;
             
             // Must be same agency (comparing linked record IDs)
             if (!recordAgency || !currentAgency) return false;
             if (recordAgency[0]?.id !== currentAgency[0]?.id) return false;
             
-            // Must be from an earlier year (within range)
-            if (!recordYear || recordYear >= currentYear || recordYear < minYear) return false;
+            // Must be from an earlier year (within range) - convert to numbers for comparison
+            const currentYearNum = parseInt(currentYear);
+            const recordYearNum = parseInt(recordYear);
+            if (!recordYear || isNaN(recordYearNum) || isNaN(currentYearNum)) return false;
+            if (recordYearNum >= currentYearNum || recordYearNum < minYear) return false;
             
             return true;
         });
@@ -147,12 +154,20 @@ async function detectSupersedes() {
             const matchScore = calculateTitleMatch(keywords, candidateTitle);
             
             if (matchScore >= CONFIG.THRESHOLDS.MATCH_PERCENTAGE) {
+                const candidateYear = candidate.getCellValue(CONFIG.FIELDS.YEAR);
+                // Handle different field types: select field (object), number, or string
+                let yearValue;
+                if (typeof candidateYear === 'object' && candidateYear !== null) {
+                    yearValue = candidateYear.name || candidateYear;
+                } else {
+                    yearValue = candidateYear;
+                }
                 matches.push({
                     record: candidate,
                     score: matchScore,
                     regId: candidate.getCellValue(CONFIG.FIELDS.REG_ID),
                     title: candidateTitle,
-                    year: candidate.getCellValue(CONFIG.FIELDS.YEAR)
+                    year: yearValue
                 });
             }
         }
@@ -160,7 +175,10 @@ async function detectSupersedes() {
         // Sort matches by score (best matches first) and year (most recent first)
         matches.sort((a, b) => {
             if (b.score !== a.score) return b.score - a.score;
-            return b.year - a.year;
+            // Convert years to numbers for comparison
+            const yearA = parseInt(a.year);
+            const yearB = parseInt(b.year);
+            return yearB - yearA;
         });
         
         // Update Internal Notes with findings
@@ -220,37 +238,35 @@ function calculateTitleMatch(keywords, candidateTitle) {
     return matchCount / keywords.length;
 }
 
-// Update the Internal Notes field with findings
+// Update the Supersedes Detection field with findings
 async function updateInternalNotes(table, currentRecord, matches) {
-    // Get existing notes
-    const existingNotes = currentRecord.getCellValue(CONFIG.FIELDS.INTERNAL_NOTES) || '';
-    
-    // Create new note about potential supersedes relationships
+    // Create detection report
     const timestamp = new Date().toLocaleDateString();
-    let newNote = `\n--- Supersedes Detection (${timestamp}) ---\n`;
-    newNote += `Potential supersedes relationships found:\n`;
+    let detectionReport = `Last checked: ${timestamp}\n\n`;
     
-    // Add top matches (limit to 5 to avoid clutter)
-    const topMatches = matches.slice(0, 5);
-    for (const match of topMatches) {
-        const confidence = match.score >= 0.75 ? 'High' : match.score >= 0.6 ? 'Medium' : 'Low';
-        newNote += `• ${match.regId} (${match.year}) - ${confidence} confidence\n`;
-        newNote += `  "${match.title}"\n`;
+    detectionReport += `Found ${matches.length} potential supersedes relationship${matches.length !== 1 ? 's' : ''}:\n\n`;
+    
+    // Add all matches (or limit if too many)
+    const maxToShow = 10;
+    const matchesToShow = matches.slice(0, maxToShow);
+    
+    for (const match of matchesToShow) {
+        const confidence = match.score >= 0.75 ? 'HIGH' : match.score >= 0.6 ? 'MEDIUM' : 'LOW';
+        detectionReport += `${confidence} CONFIDENCE:\n`;
+        detectionReport += `• ${match.regId} (Year: ${match.year})\n`;
+        detectionReport += `  Title: "${match.title}"\n`;
+        detectionReport += `  Match Score: ${(match.score * 100).toFixed(0)}%\n\n`;
     }
     
-    if (matches.length > 5) {
-        newNote += `• ... and ${matches.length - 5} more potential matches\n`;
+    if (matches.length > maxToShow) {
+        detectionReport += `... and ${matches.length - maxToShow} more potential matches\n\n`;
     }
     
-    newNote += `\nReview these and create manual links if confirmed.\n`;
-    newNote += `---\n`;
+    detectionReport += `Action: Review these suggestions and create manual links in the "Superseded By" or "Supersedes" fields if confirmed.`;
     
-    // Combine with existing notes
-    const updatedNotes = existingNotes + newNote;
-    
-    // Update the record
+    // Update the dedicated field (replaces entirely each time)
     await table.updateRecordAsync(currentRecord.id, {
-        [CONFIG.FIELDS.INTERNAL_NOTES]: updatedNotes
+        [CONFIG.FIELDS.SUPERSEDES_DETECTION]: detectionReport
     });
 }
 
