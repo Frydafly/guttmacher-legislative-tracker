@@ -1,0 +1,19 @@
+{
+  "source": {
+    "type": "csv",
+    "config": {
+      "file_path": "data/airtable_export.csv",
+      "date_columns": ["Created", "Last Modified", "Date Introduced"],
+      "incremental_key": "Last Modified"
+    }
+  },
+  "destination": {
+    "project_id": "${GCP_PROJECT_ID}",
+    "dataset_id": "legislative_tracker",
+    "table_id": "bills_current"
+  },
+  "incremental": {
+    "enabled": true,
+    "key": "Last Modified"
+  }
+}

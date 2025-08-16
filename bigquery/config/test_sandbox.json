@@ -1,0 +1,18 @@
+{
+  "source": {
+    "type": "csv",
+    "config": {
+      "file_path": "data/test_export.csv",
+      "date_columns": []
+    }
+  },
+  "destination": {
+    "project_id": "guttmacher-legislative-tracker",
+    "dataset_id": "legislative_tracker_sandbox",
+    "table_id": "bills_test",
+    "description": "TEST TABLE - Safe to delete"
+  },
+  "incremental": {
+    "enabled": false
+  }
+}

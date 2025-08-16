@@ -1,0 +1,18 @@
+{
+  "source": {
+    "type": "airtable_webhook",
+    "config": {
+      "webhook_path": "data/webhooks/",
+      "incremental_key": "modified_time"
+    }
+  },
+  "destination": {
+    "project_id": "${GCP_PROJECT_ID}",
+    "dataset_id": "legislative_tracker",
+    "table_id": "bills_realtime"
+  },
+  "incremental": {
+    "enabled": true,
+    "key": "modified_time"
+  }
+}
