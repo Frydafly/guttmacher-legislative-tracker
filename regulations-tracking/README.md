@@ -18,21 +18,11 @@
 
 You haven't set up the automations yet. Open **`AIRTABLE_FORMULAS_AUTOMATIONS.md`** for:
 
-### Priority 1: Formula Fields to Add
+### Formula Fields to Add
 1. **Days Until Expiration** - Countdown for emergency rules
 2. **Expiration Status** - Visual indicators (🔴🟡🟢)
 3. **Comment Period Days Remaining** - Track deadlines
 4. **Priority Alert** - Shows what needs immediate attention
-
-### Priority 2: Critical Automations
-1. **Emergency Rule Expiration Alert** (30-day warning)
-2. **Auto-Expire Emergency Rules** (daily check)
-3. **Comment Period Alert** (7-day warning)
-
-### Priority 3: Manual Linking
-1. Copy agency names from text field to Issuing Agency Link
-2. Link regulations to Policy Categories based on "Specific Policies (access)"
-3. Identify and link Superseded By relationships as discovered
 
 ## 📈 What You Now Have
 
@@ -46,9 +36,7 @@ After your import:
 
 ## 🔗 Manual Tasks Remaining
 
-1. **Link Agencies**: Copy "Agency Name (for linking)" to "Issuing Agency Link"
-2. **Link Policies**: Use "Specific Policies (access)" as guide to link to Policy Categories
-3. **Set Up Automations**: Follow the guide in AIRTABLE_FORMULAS_AUTOMATIONS.md
+1. **Set Up Automations**: Follow the guide in AIRTABLE_FORMULAS_AUTOMATIONS.md
 
 ## 💡 Key Insights from This Project
 
