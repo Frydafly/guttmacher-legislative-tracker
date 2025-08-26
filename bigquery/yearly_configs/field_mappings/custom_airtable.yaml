@@ -1,0 +1,98 @@
+# Custom Field Mapping Template: Airtable CSV Export Format
+# Copy and modify this file when Airtable field names change
+# Use filename: custom_YYYY.yaml
+
+# Modern Airtable field names (standardized format)
+core_fields:
+  state:
+    - "State"  # Airtable single-select field
+  
+  bill_number:
+    - "Bill Number"
+    - "Leg ID"  # Airtable may use this
+  
+  summary:
+    - "Summary"
+    - "Bill Summary"
+    - "Description"
+  
+  title:
+    - "Title"
+    - "Bill Title"
+    - "Short Title"
+
+# Airtable-specific fields
+metadata_fields:
+  airtable_id:
+    - "Record ID"
+    - "Airtable ID"
+  
+  created_time:
+    - "Created Time"
+    - "Date Created"
+  
+  modified_time:
+    - "Last Modified"
+    - "Date Modified"
+
+# Status tracking (Airtable format)
+status_fields:
+  current_status:
+    - "Current Status"  # Single-select in Airtable
+    - "Legislative Status"
+  
+  enacted:
+    - "Enacted"  # Checkbox in Airtable
+    - "Became Law"
+  
+  status_date:
+    - "Status Date"
+    - "Last Status Update"
+
+# Intent fields (Airtable multi-select)
+intent_fields:
+  intent_categories:
+    - "Intent"  # Multi-select field in Airtable
+    - "Policy Intent"
+    - "Categories"
+  
+  # These may come as separate columns from Airtable multi-select export
+  intent_positive:
+    - "Intent: Positive"
+    - "Intent: Protective"
+  
+  intent_restrictive:
+    - "Intent: Restrictive"
+    - "Intent: Anti-Choice"
+  
+  intent_neutral:
+    - "Intent: Neutral"
+    - "Intent: Procedural"
+
+# Date fields (Airtable format)
+date_fields:
+  introduced_date:
+    - "Introduced Date"
+    - "Date Introduced"
+  
+  last_action_date:
+    - "Last Action Date"
+    - "Most Recent Action Date"
+  
+  enacted_date:
+    - "Enacted Date"
+    - "Date Enacted"
+
+# Rich text fields from Airtable
+text_fields:
+  notes:
+    - "Notes"
+    - "Internal Notes"
+  
+  public_notes:
+    - "Public Notes" 
+    - "Website Notes"
+  
+  policy_details:
+    - "Policy Details"
+    - "Detailed Analysis"

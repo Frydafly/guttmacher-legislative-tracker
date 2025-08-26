@@ -7,8 +7,10 @@ Handles both raw archival and harmonized analytical import
 import argparse
 import logging
 import yaml
+import sys
 from pathlib import Path
 from datetime import datetime
+sys.path.append(str(Path(__file__).parent))
 
 from raw_archive import archive_year_raw
 from harmonized_import import import_year_harmonized

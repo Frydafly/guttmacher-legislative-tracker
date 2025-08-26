@@ -135,13 +135,13 @@ harmonized_import:
   field_mapping: "standard"       # Use standard mapping (or "custom_2026")
 ```
 
-**2. Custom field mapping (if needed):**
+**2. Custom field mapping (if Airtable fields change):**
 ```yaml
 # yearly_configs/field_mappings/custom_2026.yaml
 core_fields:
-  new_field_2026:
-    - "New Field Name"
-    - "Alt Field Name"
+  new_airtable_field:
+    - "New Field Name from Airtable"
+    - "Alternative Name"
 ```
 
 ### Modifying Field Mappings

@@ -32,16 +32,28 @@ def archive_year_raw(year: int, config: dict):
     
     logger.info(f"📁 Processing {data_path.name}")
     
-    # Export from mdb with original field names
-    csv_path = base_path / f"temp_raw_{year}.csv"
-    cmd = f'mdb-export "{data_path}" "{table_name}" > "{csv_path}"'
+    # Handle different file formats
+    if data_path.suffix.lower() in ['.mdb', '.accdb']:
+        # Export from Access database
+        csv_path = base_path / f"temp_raw_{year}.csv"
+        cmd = f'mdb-export "{data_path}" "{table_name}" > "{csv_path}"'
+        
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception(f"mdb-export failed: {result.stderr}")
+        
+        df = pd.read_csv(csv_path)
+        # Cleanup temp file
+        csv_path.unlink()
+        
+    elif data_path.suffix.lower() == '.csv':
+        # Direct CSV import (Airtable exports, etc.)
+        df = pd.read_csv(data_path)
+        logger.info("📊 Direct CSV import (no mdb-export needed)")
+        
+    else:
+        raise ValueError(f"Unsupported file format: {data_path.suffix}")
     
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    if result.returncode != 0:
-        raise Exception(f"mdb-export failed: {result.stderr}")
-    
-    # Load CSV (preserve all original fields)
-    df = pd.read_csv(csv_path)
     logger.info(f"📊 Loaded {len(df)} rows with {len(df.columns)} original columns")
     
     # Add metadata columns

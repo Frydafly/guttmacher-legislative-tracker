@@ -1,20 +1,19 @@
-# Annual Import Configuration Template
-# Copy this file and modify for each new year (2025+)
-# For Airtable CSV exports
+# Annual Import Configuration for 2024
+# Test configuration using existing data
 
-year: 2025
+year: 2024
 
 metadata:
-  source_file: "2025 Legislative Database.csv"
-  table_name: "N/A"  # CSV files don't have table names
-  created_date: "2025-12-31"
-  notes: "CSV export from Airtable - new format starting 2025"
+  source_file: "2024 state legislation12192023.accdb"
+  table_name: "Legislative Monitoring Table"
+  created_date: "2024-12-31"
+  notes: "Test with existing file"
   contact: "fryda.guedes@gmail.com"
 
 # Raw archival import (preserve original structure)
 raw_import:
   enabled: true
-  table_name: "raw_historical_2025"
+  table_name: "raw_historical_2024"
   dataset: "legislative_tracker_staging"
   preserve_all_fields: true
   add_metadata: true
@@ -22,9 +21,9 @@ raw_import:
 # Harmonized import (analytical schema)  
 harmonized_import:
   enabled: true
-  table_name: "historical_bills_2025"
-  dataset: "legislative_tracker_staging"
-  field_mapping: "custom_airtable"  # Use Airtable-specific mappings
+  table_name: "historical_bills_2024"
+  dataset: "legislative_tracker_historical"
+  field_mapping: "standard"  # or "custom_2024" for special cases
   apply_transformations: true
   
 # Post-import actions
