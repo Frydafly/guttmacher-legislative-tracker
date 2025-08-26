@@ -136,6 +136,9 @@ class GuttmacherMigration:
             except google_exceptions.GoogleCloudError as e:
                 self.logger.error("❌ Failed to create dataset: %s", e)
                 return False
+        except google_exceptions.Forbidden:
+            # Dataset exists but we don't have get permission - continue anyway
+            self.logger.info("⚠️ Dataset '%s' exists (permission check skipped)", self.dataset_id)
 
         # Check for database files
         db_files = list(self.data_path.glob("*.mdb")) + list(self.data_path.glob("*.accdb"))

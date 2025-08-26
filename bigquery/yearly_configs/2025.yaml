@@ -1,0 +1,40 @@
+# Annual Import Configuration for 2025
+# Copy this file and modify for each new year
+
+year: 2025
+
+metadata:
+  source_file: "2025 Legislative Database.accdb"
+  table_name: "Legislative Monitoring"
+  created_date: "2025-12-31"
+  notes: "Standard structure expected"
+  contact: "data-team@guttmacher.org"
+
+# Raw archival import (preserve original structure)
+raw_import:
+  enabled: true
+  table_name: "raw_historical_2025"
+  dataset: "legislative_tracker_staging"
+  preserve_all_fields: true
+  add_metadata: true
+
+# Harmonized import (analytical schema)  
+harmonized_import:
+  enabled: true
+  table_name: "historical_bills_2025"
+  dataset: "legislative_tracker_staging"
+  field_mapping: "standard"  # or "custom_2025" for special cases
+  apply_transformations: true
+  
+# Post-import actions
+post_import:
+  update_unified_view: true
+  refresh_materialized_table: true
+  update_looker_table: true
+  run_data_quality_checks: true
+
+# Data quality expectations
+quality_checks:
+  min_row_count: 500
+  required_fields: ["state", "bill_number", "summary"]
+  max_null_percentage: 0.1

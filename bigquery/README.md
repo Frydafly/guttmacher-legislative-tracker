@@ -1,174 +1,217 @@
-# Guttmacher Legislative Tracker - BigQuery Historical Data
+# Guttmacher Legislative Tracker - BigQuery Pipeline
 
-Complete migration pipeline for **21 years (2002-2023)** of legislative tracking data with schema harmonization and analytics optimization.
+**Complete data pipeline for historical legislative tracking data (2002-2024) with annual update capability.**
 
-## 🎯 Overview
+## 🎯 What This Repository Does
 
-**Status**: ✅ Migration Complete (21 years, 20,221 bills)
-- Successfully migrated historical .mdb/.accdb files to BigQuery
-- Harmonized varying database schemas across 21 years
-- Created comprehensive analytics views with proper NULL/FALSE patterns
-- Built field tracking status system for data quality assessment
+This pipeline:
+1. **Preserves raw historical data** exactly as it was in original Access databases  
+2. **Creates harmonized analytical data** with consistent schema across 22+ years
+3. **Provides annual update capability** for adding new years of data
 
-## 📊 Data Available
+### Key Features
+- ✅ **22 years of historical data** (2002-2024) in BigQuery
+- ✅ **Raw preservation**: Original field names and structures maintained
+- ✅ **Analytical consistency**: Harmonized schema for cross-year analysis  
+- ✅ **Annual pipeline**: Simple process for adding new years
+- ✅ **Configuration-driven**: Easy to adapt for schema changes
 
-### **Years Migrated**: 2002-2023 (21 years)
-- **Total Bills**: 20,221 bills
-- **Missing**: 2024 (empty database file)
-- **Data Quality**: Full field tracking status documentation
+## 🚀 Quick Start Guide
 
-### **Key Views for Analysis**:
-1. **`comprehensive_bills_authentic`** - Main dashboard view (recommended)
-2. **`all_historical_bills_unified`** - Raw unified data
-3. **`tracking_completeness_matrix`** - Field availability by year
-4. **`realistic_field_tracking_by_year`** - Tracking evolution analysis
+### For Analysts & Data Users
 
-## 🚀 Quick Start
+**Access the data in BigQuery:**
+- **Project**: `guttmacher-legislative-tracker`
+- **Main dataset**: `legislative_tracker_historical` (for analysis)
+- **Raw dataset**: `legislative_tracker_staging` (for historical preservation)
 
-### For Analysts & Researchers
+**Key tables:**
 ```sql
--- Start with the main view
-SELECT * FROM `comprehensive_bills_authentic` 
-WHERE data_year = 2023 AND intent_consolidated = 'Positive';
+-- Harmonized data for analysis
+SELECT * FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all_historical_bills_unified`
 
--- Check what fields are available for a specific year
-SELECT * FROM `tracking_completeness_matrix` 
-WHERE data_year = 2016;
+-- 2011 example for Amy's analysis
+SELECT * FROM `guttmacher-legislative-tracker.legislative_tracker_historical.analysis_2011_intent_breakdown`
+
+-- Raw data (original field names)  
+SELECT * FROM `guttmacher-legislative-tracker.legislative_tracker_staging.raw_historical_2011`
 ```
 
-### For Developers
-```bash
-# Setup environment
-cd bigquery
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+### For Administrators & Developers
 
-# Run migration (if needed)
-python migrate.py
-```
+**Adding a new year (e.g., 2025):**
 
-## 📁 Project Structure
+1. **Setup environment** (first time only):
+   ```bash
+   cd bigquery
+   ./setup_migration_env.sh  # Handles authentication & dependencies
+   ```
+
+2. **Add new year's database file**:
+   ```bash
+   # Copy new .accdb/.mdb file to data/ directory
+   cp "2025 Legislative Database.accdb" data/
+   ```
+
+3. **Configure the year**:
+   ```bash
+   # Edit yearly_configs/2025.yaml with correct source file name
+   vim yearly_configs/2025.yaml
+   ```
+
+4. **Run import**:
+   ```bash
+   # Import both raw (preservation) and harmonized (analysis) versions
+   python3 annual/add_year.py --year 2025
+   ```
+
+## 📁 Repository Structure
 
 ```
 bigquery/
-├── 📊 DATA ACCESS
-│   ├── README.md                          # This file
-│   ├── BIGQUERY_USER_GUIDE.md            # Non-technical user guide
-│   └── TRACKING_STATUS_VIEWS_GUIDE.md    # Field tracking reference
+├── 🔧 ANNUAL PIPELINE (for new years)
+│   ├── annual/
+│   │   ├── add_year.py              # Main script for adding new years
+│   │   ├── raw_archive.py           # Raw data preservation
+│   │   └── harmonized_import.py     # Analytical data import
+│   │
+│   ├── yearly_configs/              # Configuration for each year
+│   │   ├── 2025.yaml               # Template for new years
+│   │   └── field_mappings/         # Custom mappings if needed
+│   │
+│   └── shared/                     # Common utilities
+│       ├── field_mappings.yaml     # Standard field harmonization
+│       └── bigquery_utils.py       # BigQuery operations
 │
-├── 📈 MIGRATION DOCUMENTATION  
-│   ├── TEAM_MEETING_REPORT_20250711.md   # Official migration report
-│   └── MIGRATION_FIXES_SUMMARY.md        # NULL/FALSE pattern fixes
+├── 📦 HISTORICAL MIGRATION (completed)
+│   ├── archive/
+│   │   └── migrate.py              # Original historical migration script
+│   │
+│   ├── MIGRATION_SETUP.md          # Setup guide for annual pipeline
+│   ├── setup_migration_env.sh      # Environment setup script
+│   └── ARCHITECTURE_PROPOSAL.md    # Technical architecture decisions
 │
-├── 🔧 MIGRATION SCRIPTS
-│   ├── migrate.py                         # Main migration script
-│   ├── field_mappings.yaml               # Schema harmonization
-│   └── requirements.txt                  # Dependencies
+├── 📊 DATA & ANALYSIS  
+│   ├── data/                       # Historical database files (.mdb/.accdb)
+│   ├── sql/                        # Analysis queries and views
+│   └── docs/                       # Additional documentation
 │
-├── 📂 DATA
-│   ├── data/                             # Historical database files
-│   │   ├── 2002-2023.mdb/.accdb         # Source files
-│   │   └── 2024.accdb                   # Empty (migration failed)
-│   └── venv/                            # Python environment
-│
-└── 🔍 ANALYSIS & UTILITIES
-    ├── sql/                             # SQL analysis scripts
-    ├── docs/                            # Additional documentation
-    └── [various utility scripts]
+└── ⚙️ SUPPORTING FILES
+    ├── field_mappings.yaml         # Field harmonization rules
+    ├── requirements.txt            # Python dependencies
+    ├── .env                        # Configuration (created by setup)
+    └── venv/                       # Python virtual environment
+```
+
+## 📊 Data Architecture
+
+### Raw Data Preservation (`legislative_tracker_staging`)
+- **Purpose**: Historical archival exactly as databases were
+- **Tables**: `raw_historical_YYYY` (e.g., `raw_historical_2011`)
+- **Features**: Original field names, no harmonization, metadata preserved
+
+### Harmonized Data (`legislative_tracker_historical`) 
+- **Purpose**: Cross-year analysis with consistent schema
+- **Tables**: `historical_bills_YYYY` + unified views
+- **Features**: Standardized field names, consistent data types, analytical views
+
+## 🔧 Configuration
+
+### Adding a New Year
+
+**1. Create year configuration:**
+```yaml
+# yearly_configs/2026.yaml
+year: 2026
+metadata:
+  source_file: "2026 Legislative Database.accdb"
+  table_name: "Legislative Monitoring"
+
+raw_import:
+  enabled: true                    # Always preserve raw data
+  
+harmonized_import:
+  enabled: true                    # Always create analytical version
+  field_mapping: "standard"       # Use standard mapping (or "custom_2026")
+```
+
+**2. Custom field mapping (if needed):**
+```yaml
+# yearly_configs/field_mappings/custom_2026.yaml
+core_fields:
+  new_field_2026:
+    - "New Field Name"
+    - "Alt Field Name"
+```
+
+### Modifying Field Mappings
+
+Edit `shared/field_mappings.yaml` to add new field mappings:
+
+```yaml
+core_fields:
+  bill_number:
+    - "BillNumber"
+    - "BILLNUMBER"
+    - "Bill Number"
+    - "New Variant"      # Add new variants here
+
+status_fields:
+  enacted:
+    - "Enacted"
+    - "Passed"
+    - "New Status Field"  # Add new status variants
 ```
 
 ## 🔍 Understanding the Data
 
-### **Field Tracking Evolution**
-The data preserves the story of evolving methodology:
+### Field Evolution Across Years
+- **2002-2005**: Basic bill tracking
+- **2006-2015**: Modern status tracking introduced  
+- **2016-2024**: Full date tracking, rich summaries
+- **Special cases**: 2019 "WITH ALL THE SUBPOLICIES" has extra fields
 
-| Era | Years | Key Features |
-|-----|-------|-------------|
-| **Foundation** | 2002-2005 | Basic bill identification |
-| **Revolution** | 2006-2015 | Modern status tracking |
-| **Comprehensive** | 2016-2018 | Full date tracking |
-| **Modern** | 2019-2023 | Rich summaries + emerging categories |
+### Data Quality Notes
+- **Raw data**: Preserves exact original structure (including problematic field names)
+- **Harmonized data**: Consistent schema but may lose some original nuances
+- **Missing years**: Some early years (2002-2007) may have limited raw data due to different table structures
 
-### **Critical Data Patterns**
-- **NULL vs FALSE**: NULL means "not tracked that year", FALSE means "tracked but negative"
-- **Contraception Gap**: Not tracked 2006-2008 (shows as NULL)
-- **Period Products**: Only tracked 2019+ (NULL before)
-- **Incarceration**: Only tracked 2019+ (NULL before)
-- **Intent Consolidated**: Single source of truth for bill intent
+## 🆘 Troubleshooting
 
-## 📊 Key Analytics Views
+### Common Issues
 
-### **`comprehensive_bills_authentic`** ⭐ **RECOMMENDED**
-Enhanced view with dashboard helpers, preserves NULL patterns
-```sql
-SELECT data_year, state_name, region, intent_consolidated, 
-       policy_area_count, abortion, contraception, period_products
-FROM `comprehensive_bills_authentic` 
-WHERE data_year >= 2019;
+**"Permission denied" errors:**
+```bash
+# Run the setup script to fix authentication
+./setup_migration_env.sh
 ```
 
-### **`tracking_completeness_matrix`** 
-Visual tracking status (✅/⚠️/❌) by year and field
-```sql
-SELECT data_year, contraception_tracked, period_products_tracked, 
-       incarceration_tracked, intent_fields_tracked
-FROM `tracking_completeness_matrix` 
-ORDER BY data_year;
+**"Table not found" errors:**
+```bash
+# Check if data exists
+bq ls legislative_tracker_historical
+bq ls legislative_tracker_staging
 ```
 
-### **`all_historical_bills_unified`**
-Raw unified data for custom analysis
-```sql
-SELECT * FROM `all_historical_bills_unified` 
-WHERE state = 'CA' AND data_year BETWEEN 2020 AND 2023;
+**Field mapping issues:**
+```bash
+# Test with verbose logging
+python3 annual/add_year.py --year 2025 --verbose
 ```
 
-## 🎯 Common Use Cases
+### Getting Help
 
-### **1. Dashboard Creation**
-Use `comprehensive_bills_authentic` - has all enhancements while preserving compatibility
+1. **Setup issues**: Run `./setup_migration_env.sh`
+2. **Data questions**: Check `sql/` directory for example queries
+3. **Configuration**: Look at `yearly_configs/2025.yaml` template
+4. **Architecture**: Read `ARCHITECTURE_PROPOSAL.md`
 
-### **2. Historical Trend Analysis**
-Check `tracking_completeness_matrix` first to understand data availability
+## 📚 Additional Documentation
 
-### **3. Policy Category Analysis**
-Use corrected NULL patterns - NULL means not tracked, FALSE means tracked but not applicable
-
-### **4. Intent Analysis**
-Use `intent_consolidated` field (Positive, Restrictive, Neutral, Mixed, Unclassified)
-
-## ⚠️ Important Notes
-
-### **Data Quality Considerations**
-1. **Always check tracking status** before analysis
-2. **2024 data is missing** - database file is empty
-3. **Field evolution affects comparability** - use tracking views to understand
-4. **NULL patterns are preserved** - critical for authentic analysis
-
-### **Migration Status**
-- ✅ **Complete**: 2002-2024 (22 years)
-- 🔧 **Fixed**: NULL/FALSE patterns corrected
-- 📊 **Enhanced**: Consolidated intent field added
-
-## 🔗 Related Documentation
-
-- **[BigQuery User Guide](BIGQUERY_USER_GUIDE.md)** - Non-technical access guide
-- **[Tracking Status Guide](TRACKING_STATUS_VIEWS_GUIDE.md)** - Field availability reference
-- **[Team Meeting Report](TEAM_MEETING_REPORT_20250711.md)** - Official migration documentation
-- **[Migration Fixes Summary](MIGRATION_FIXES_SUMMARY.md)** - NULL/FALSE pattern corrections
-
-## 🆘 Support
-
-### **Common Issues**
-- **Can't see intent_consolidated field**: It's column 42 in comprehensive_bills_authentic
-- **Unexpected NULL values**: Check tracking_completeness_matrix for field availability
-
-### **Getting Help**
-1. Check the tracking status views first
-2. Review the team meeting report for methodology details
-3. Consult the migration fixes summary for recent changes
+- **[Migration Setup Guide](MIGRATION_SETUP.md)** - Detailed setup instructions
+- **[Architecture Proposal](ARCHITECTURE_PROPOSAL.md)** - Technical design decisions  
+- **[Historical Migration Report](2002_2024_Historical_Migration.md)** - What was migrated
 
 ---
 
-**Last Updated**: July 15, 2025 (Added 2023 data, fixed NULL patterns, added consolidated intent field)
+**Last Updated**: August 2025 (Annual pipeline architecture implemented)
