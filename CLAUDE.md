@@ -2,12 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Team Context & Philosophy
+
+### Team Size & Approach
+- **Small team = pragmatic solutions**
+- **Philosophy**: Simple > Perfect. Avoid over-engineering
+- **Before building ANY new tool, ask:**
+  1. How often does this occur? (Rare = manual, Monthly = script, Weekly+ = automate)
+  2. Can we solve with existing tools/comments/checklists?
+  3. Who maintains this when you're gone?
+
+### 🚨 Avoid Over-Engineering
+**Red flags:** Frameworks for 3 uses, abstractions for single cases, future-proofing undefined futures
+
 ## Project Overview
 
-The Guttmacher Legislative Tracker is a dual-purpose repository containing:
+The Guttmacher Legislative Tracker is a multi-purpose repository containing:
 
 1. **Airtable automation scripts** that run within Airtable's automation platform to monitor and maintain policy tracking data
 2. **BigQuery historical data pipeline** for processing and analyzing historical legislative data from Access databases
+3. **Dashboard improvements** (planned) for external-facing legislative tracker with enhanced visualizations and user experience
 
 ## Architecture
 
@@ -80,13 +94,51 @@ python etl/migration_pipeline.py
    - Configuration in `schema/field_mappings.yaml` controls how historical fields map to current structure
    - Handles inconsistent naming, date formats, and data types across years
 
+## Dashboard Improvements (In Progress)
+
+### Current Status
+- **Date**: September 18, 2025
+- **Phase**: Requirements gathering and feasibility assessment
+- **Stakeholders**: Candace, Liz, Mollie
+- **Awaiting**: Response on priorities and timeline
+
+### Current External-Facing Tracker Analysis
+Based on screenshots reviewed 9/18/25:
+- 3-page Airtable Interface (Bills Overview, Bills Details, Policy Categories)
+- Tracking 1,956 bills for 2025 session
+- Has basic charts but lacks narrative summaries and geographic visualization
+
+### Key Metrics to Track
+- **Total bills by status:** Introduced, Enacted, Failed, In Committee
+- **Bills by intent:** Protective vs Restrictive ratios
+- **Bills by category:** Abortion, Contraception, Trans Health, Youth, etc.
+- **Temporal trends:** Current session vs previous sessions
+- **Geographic distribution:** State-level aggregations
+
+### Implementation Approach
+**Primary**: Enhance existing Airtable Interface with:
+- Rich text narratives with placeholder text
+- Button bar navigation for category filtering
+- State grid (50 buttons) instead of map
+- Formula fields for calculating ratios and trends
+- Historical snapshots table for comparisons
+
+**See**: `DASHBOARD_ENHANCEMENT_PLAN.md` for full implementation details
+
 ## Common Tasks
+
+### When implementing dashboard improvements:
+1. **Start simple**: Use existing Airtable views before building custom solutions
+2. **Data aggregation**: Leverage BigQuery for complex analytics, Airtable for real-time counts
+3. **Performance**: Cache frequently accessed aggregations
+4. **User testing**: Get feedback on wireframes before full implementation
 
 ### When modifying Airtable scripts:
 1. Always preserve the CONFIG object structure at the top of each script
 2. Test date parsing and formatting carefully - scripts handle various date formats
 3. Maintain backward compatibility with existing Airtable field names
 4. Include detailed console output for debugging within Airtable
+5. **For dashboard data**: Consider adding aggregation fields to Website Exports table
 
 ### When modifying BigQuery pipeline:
 1. Always activate virtual environment first: `source venv/bin/activate`
@@ -94,12 +146,14 @@ python etl/migration_pipeline.py
 3. Test with `test_connection.py` before running full pipeline
 4. Check logs for data quality issues and mapping problems
 5. Update requirements.txt if adding new dependencies
+6. **For dashboard analytics**: Create materialized views for common aggregations
 
 ### When adding new features:
 1. **Airtable**: Check Airtable's scripting API documentation for available methods
 2. **BigQuery**: Consider performance - large datasets require proper optimization
-3. Update the corresponding README.md in the script's directory
-4. Test with production-like data volumes
+3. **Dashboard**: Start with mockups, validate with users before building
+4. Update the corresponding README.md in the script's directory
+5. Test with production-like data volumes
 
 ## File Structure Notes
 
@@ -108,6 +162,7 @@ guttmacher-legislative-tracker/
 ├── airtable-scripts/           # Airtable automation scripts
 │   ├── health-monitoring/
 │   ├── partner-email-report/
+│   ├── supersedes-detector/
 │   └── website-export/
 ├── bigquery/                   # BigQuery historical data pipeline
 │   ├── venv/                  # Virtual environment (NOT in git)
@@ -117,6 +172,7 @@ guttmacher-legislative-tracker/
 │   ├── etl/                  # ETL pipeline scripts
 │   ├── sql/                  # BigQuery views and queries
 │   └── requirements.txt      # Python dependencies
+├── DASHBOARD_ENHANCEMENT_PLAN.md  # Consolidated dashboard implementation plan
 ├── CLAUDE.md                  # This file
 └── README.md                 # Main project documentation
 ```
@@ -142,6 +198,22 @@ guttmacher-legislative-tracker/
 - Keep documentation updated when making changes
 - Test both Airtable scripts and BigQuery pipeline changes thoroughly
 - Consider data privacy when working with historical legislative data
+
+## Validation & Testing Approach
+
+### Testing Hierarchy (from Better Data Initiative)
+When implementing changes, follow this testing hierarchy:
+1. **Syntax/Compilation** - Code runs without errors
+2. **Unit Testing** - Individual components work correctly
+3. **Integration Testing** - Components work together
+4. **End-to-End Testing** - Complete user workflows function
+5. **Error Testing** - System handles failure cases gracefully
+
+### Never claim a fix works without functional testing:
+- ❌ "Fixed data export" → only tested dry-run mode
+- ✅ "Fixed data export" → actually exported data and verified output
+- ❌ "Added aggregation" → only checked compilation
+- ✅ "Added aggregation" → ran query and verified results
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
