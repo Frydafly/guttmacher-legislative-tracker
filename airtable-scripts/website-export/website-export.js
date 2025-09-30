@@ -375,9 +375,10 @@ async function runPreflightValidation() {
         });
     }
     
-    // Check 3: Missing required fields - bills without State, BillType, or BillNumber
+    // Check 3: Missing required fields - bills without BillID, State, BillType, or BillNumber
     const missingFieldsCheck = await billsTable.selectRecordsAsync({
         filterByFormula: `OR(
+            {BillID} = BLANK(),
             {State} = BLANK(),
             {BillType} = BLANK(),
             {BillNumber} = BLANK()
@@ -387,34 +388,43 @@ async function runPreflightValidation() {
     
     if (missingFieldsCheck.records.length > 0) {
         // Separate bills by what they're missing
+        const missingBillId = [];
         const missingState = [];
         const missingBillType = [];
         const missingBillNumber = [];
-        
+
         missingFieldsCheck.records.forEach(r => {
-            const billId = r.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown';
+            const billId = r.getCellValue(CONFIG.FIELDS.BILL_ID);
             const state = r.getCellValue(CONFIG.FIELDS.STATE);
             const billType = r.getCellValue(CONFIG.FIELDS.BILL_TYPE);
             const billNumber = r.getCellValue(CONFIG.FIELDS.BILL_NUMBER);
-            
+
+            const identifier = billId || `${state?.name || 'Unknown'}-${billType?.name || ''}${billNumber || ''}`;
+
+            if (!billId) {
+                missingBillId.push(identifier);
+            }
             if (!state) {
-                missingState.push(billId);
+                missingState.push(identifier);
             }
             if (!billType) {
-                missingBillType.push(billId);
+                missingBillType.push(identifier);
             }
             if (!billNumber) {
-                missingBillNumber.push(billId);
+                missingBillNumber.push(identifier);
             }
         });
-        
-        // Count total critical missing (all three fields are critical for export)
-        const criticalMissingCount = missingState.length + missingBillType.length + missingBillNumber.length;
+
+        // Count total critical missing (all four fields are critical for export)
+        const criticalMissingCount = missingBillId.length + missingState.length + missingBillType.length + missingBillNumber.length;
         
         // Only add to critical issues if we actually found missing fields
         if (criticalMissingCount > 0) {
             // Build summary table showing only fields that are actually missing
             const summaryParts = [];
+            if (missingBillId.length > 0) {
+                summaryParts.push(`**BillID**: ${missingBillId.length} bills`);
+            }
             if (missingState.length > 0) {
                 summaryParts.push(`**State**: ${missingState.length} bills`);
             }
@@ -424,22 +434,27 @@ async function runPreflightValidation() {
             if (missingBillNumber.length > 0) {
                 summaryParts.push(`**BillNumber**: ${missingBillNumber.length} bills`);
             }
-            
+
             // Create specific bills list
             const specificBills = [];
+            if (missingBillId.length > 0) {
+                missingBillId.forEach(identifier => {
+                    specificBills.push(`${identifier}: Missing BillID`);
+                });
+            }
             if (missingState.length > 0) {
-                missingState.forEach(billId => {
-                    specificBills.push(`${billId}: Missing State`);
+                missingState.forEach(identifier => {
+                    specificBills.push(`${identifier}: Missing State`);
                 });
             }
             if (missingBillType.length > 0) {
-                missingBillType.forEach(billId => {
-                    specificBills.push(`${billId}: Missing BillType`);
+                missingBillType.forEach(identifier => {
+                    specificBills.push(`${identifier}: Missing BillType`);
                 });
             }
             if (missingBillNumber.length > 0) {
-                missingBillNumber.forEach(billId => {
-                    specificBills.push(`${billId}: Missing BillNumber`);
+                missingBillNumber.forEach(identifier => {
+                    specificBills.push(`${identifier}: Missing BillNumber`);
                 });
             }
             
@@ -667,13 +682,16 @@ async function processWithProgress(records, metrics) {
  * Enhanced transform function with quality tracking
  */
 async function transformRecord(record, metrics) {
+    // Extract unique bill identifier FIRST - this is critical for preventing overwrites
+    const billId = record.getCellValue(CONFIG.FIELDS.BILL_ID) || '';
+
     // Extract core bill information
     const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
     const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
     const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
-    
-    // Check for all required fields
-    const hasAllFields = state && billType && billNumber;
+
+    // Check for all required fields (including BillID for uniqueness)
+    const hasAllFields = billId && state && billType && billNumber;
     if (hasAllFields) {
         metrics.metrics.recordsWithAllFields++;
     }
@@ -791,6 +809,7 @@ async function transformRecord(record, metrics) {
     }
 
     return {
+        BillID: billId,  // CRITICAL: Unique identifier to prevent overwrites
         State: state,
         BillType: billType,
         BillNumber: billNumber,
@@ -990,14 +1009,15 @@ function checkDateValidation(record) {
 
 function validateRecord(record) {
     const missingFields = [];
-    
-    const requiredFields = ['STATE', 'BILL_TYPE', 'BILL_NUMBER'];
+
+    // BillID is now required to ensure unique exports
+    const requiredFields = ['BILL_ID', 'STATE', 'BILL_TYPE', 'BILL_NUMBER'];
     requiredFields.forEach(field => {
         if (!record.getCellValue(CONFIG.FIELDS[field])) {
             missingFields.push(CONFIG.FIELDS[field]);
         }
     });
-    
+
     return {
         valid: missingFields.length === 0,
         missingFields: missingFields

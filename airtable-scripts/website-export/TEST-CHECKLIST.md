@@ -15,12 +15,12 @@ This checklist ensures critical functionality remains intact. Any failure = DO N
 - [ ] Ensure NO date calculations in the script
 - [ ] Test with a bill that has 🚫 emoji - should block export
 
-### Test 1.2: Duplicate BillID Detection  
+### Test 1.2: Duplicate BillID Detection
 **CRITICAL**: Must use BillID as unique identifier
 - [ ] Verify duplicate check uses `record.getCellValue(CONFIG.FIELDS.BILL_ID)`
 - [ ] Confirm duplicates are detected in Bills table, NOT Website Exports
 - [ ] Test with duplicate BillIDs - should show critical error
-- [ ] Ensure BillID is NOT included in export records
+- [ ] Ensure BillID IS included in export records (to prevent companion bill overwrites)
 
 ### Test 1.3: Missing Required Fields Display
 **CRITICAL**: Must show smart summary instead of overwhelming lists
@@ -58,8 +58,8 @@ This checklist ensures critical functionality remains intact. Any failure = DO N
 - [ ] Fix issue and verify quality report saves on success
 
 ### Test 3.2: Field Mapping Accuracy
-**CRITICAL**: No BillID in export
-- [ ] Verify export record does NOT contain BillID field
+**CRITICAL**: BillID MUST be in export (as of Sept 2025 - companion bill fix)
+- [ ] Verify export record DOES contain BillID field as first field
 - [ ] Confirm all other fields map correctly:
   - State, BillType, BillNumber
   - All 10 Subpolicy fields
@@ -137,7 +137,7 @@ Run this before ANY code changes:
 2. **Duplicate Detection**
    - MUST use BillID field
    - Check in Bills table only
-   - Do NOT add BillID to export
+   - BillID MUST be included in export (companion bill fix - Sept 2025)
 
 3. **Blurb Processing**
    - MUST preserve ALL existing blurbs
@@ -202,7 +202,7 @@ If tests fail after changes:
 
 **Remember**: When in doubt, DON'T change it. The script works as-is for critical operations.
 
-Last verified working: June 2025
+Last verified working: September 2025 (Updated with BillID export for companion bill fix)
 
 ## 11. 🚨 GitHub Integration Tests
 
