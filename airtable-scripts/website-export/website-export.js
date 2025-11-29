@@ -13,6 +13,8 @@ const CONFIG = {
     // Source fields from Bills table
     FIELDS: {
         BILL_ID: 'BillID',
+        WEBSITE_BILL_ID: 'Website Bill ID',
+        YEAR: 'Year',
         STATE: 'State',
         BILL_TYPE: 'BillType',
         BILL_NUMBER: 'BillNumber',
@@ -27,8 +29,7 @@ const CONFIG = {
         ENACTED_DATE: 'Enacted Date',
         ACTION_TYPE: 'Action Type',
         DATE_VALIDATION: 'Date Validation',
-        STATUS: 'Current Bill Status',
-        LAST_MODIFIED: 'Last Modified Time'
+        STATUS: 'Current Bill Status'
     },
     
     // Quality tracking tables
@@ -323,23 +324,31 @@ async function runPreflightValidation() {
     };
     
     const billsTable = base.getTable('Bills');
-    
+
+    // Get current year for filtering - only validate bills we're about to export
+    const currentYear = new Date().getFullYear().toString();
+
     // Create progress indicator
     output.markdown('Checking data quality...\n');
-    
+
     // Check 1: Date validation issues - check for records with the 🚫 emoji (which means actual date issues)
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
     const dateIssueCheck = await billsTable.selectRecordsAsync({
         filterByFormula: `FIND('🚫', {Date Validation}) > 0`,
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.DATE_VALIDATION, CONFIG.FIELDS.STATE]
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.DATE_VALIDATION, CONFIG.FIELDS.STATE]
     });
-    
+
     if (dateIssueCheck.records.length > 0) {
-        // Filter to only include records that actually have the emoji in the text
+        // Filter to current year and only include records that actually have the emoji in the text
         const actualIssues = dateIssueCheck.records.filter(r => {
+            const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
+            const recordYear = yearField?.name || yearField;
+            if (recordYear != currentYear) return false;
+
             const val = r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
             return val && typeof val === 'string' && val.includes('🚫');
         });
-        
+
         if (actualIssues.length > 0) {
             validation.critical.push({
                 type: '🚫 Future Date Issues',
@@ -347,7 +356,7 @@ async function runPreflightValidation() {
                 severity: 'CRITICAL',
                 impact: 'Bills have future dates that need to be corrected',
                 examples: actualIssues.slice(0, 10).map(r => ({
-                    bill: r.getCellValue(CONFIG.FIELDS.BILL_ID),
+                    bill: r.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || r.getCellValue(CONFIG.FIELDS.BILL_ID),
                     issue: r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION)
                 }))
             });
@@ -356,53 +365,98 @@ async function runPreflightValidation() {
     }
     
     // Check 2: Website blurbs (informational only)
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
     const blurbCheck = await billsTable.selectRecordsAsync({
         filterByFormula: `AND(
             OR({Current Bill Status} = 'Enacted', {Current Bill Status} = 'Vetoed'),
             OR({Website Blurb} = '', {Website Blurb} = BLANK())
         )`,
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATUS, CONFIG.FIELDS.STATE]
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATUS, CONFIG.FIELDS.STATE]
     });
-    
+
     if (blurbCheck.records.length > 0) {
-        const states = new Set(blurbCheck.records.map(r => r.getCellValue(CONFIG.FIELDS.STATE)?.name).filter(s => s));
-        validation.info.push({
-            type: '📝 Website Descriptions Status',
-            count: blurbCheck.records.length,
-            severity: 'INFO',
-            impact: 'Standard - most bills export without descriptions',
-            statesAffected: Array.from(states).sort()
+        // Filter to current year in JavaScript
+        const currentYearBlurbs = blurbCheck.records.filter(r => {
+            const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
+            const recordYear = yearField?.name || yearField;
+            return recordYear == currentYear;
+        });
+
+        if (currentYearBlurbs.length > 0) {
+            const states = new Set(currentYearBlurbs.map(r => r.getCellValue(CONFIG.FIELDS.STATE)?.name).filter(s => s));
+            validation.info.push({
+                type: '📝 Website Descriptions Status',
+                count: currentYearBlurbs.length,
+                severity: 'INFO',
+                impact: 'Standard - most bills export without descriptions',
+                statesAffected: Array.from(states).sort()
+            });
+        }
+    }
+
+    // Check 2b: Bills missing Year field entirely
+    const missingYearCheck = await billsTable.selectRecordsAsync({
+        filterByFormula: `{Year} = BLANK()`,
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+    });
+
+    if (missingYearCheck.records.length > 0) {
+        validation.warnings.push({
+            type: '📅 Bills Missing Year Field',
+            count: missingYearCheck.records.length,
+            severity: 'WARNING',
+            impact: `${missingYearCheck.records.length} bills have no Year assigned - they will not be exported`,
+            examples: missingYearCheck.records.slice(0, 5).map(r =>
+                r.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) ||
+                r.getCellValue(CONFIG.FIELDS.BILL_ID) ||
+                `${r.getCellValue(CONFIG.FIELDS.STATE)?.name || 'Unknown'}-${r.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${r.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`
+            )
         });
     }
-    
-    // Check 3: Missing required fields - bills without BillID, State, BillType, or BillNumber
+
+    // Check 3: Missing required fields - current year bills without BillID, Website Bill ID, State, BillType, or BillNumber
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
     const missingFieldsCheck = await billsTable.selectRecordsAsync({
         filterByFormula: `OR(
             {BillID} = BLANK(),
+            {Website Bill ID} = BLANK(),
             {State} = BLANK(),
             {BillType} = BLANK(),
             {BillNumber} = BLANK()
         )`,
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
     });
-    
+
     if (missingFieldsCheck.records.length > 0) {
-        // Separate bills by what they're missing
-        const missingBillId = [];
-        const missingState = [];
-        const missingBillType = [];
-        const missingBillNumber = [];
+        // Filter to current year in JavaScript
+        const currentYearMissing = missingFieldsCheck.records.filter(r => {
+            const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
+            const recordYear = yearField?.name || yearField;
+            return recordYear == currentYear;
+        });
 
-        missingFieldsCheck.records.forEach(r => {
-            const billId = r.getCellValue(CONFIG.FIELDS.BILL_ID);
-            const state = r.getCellValue(CONFIG.FIELDS.STATE);
-            const billType = r.getCellValue(CONFIG.FIELDS.BILL_TYPE);
-            const billNumber = r.getCellValue(CONFIG.FIELDS.BILL_NUMBER);
+        if (currentYearMissing.length > 0) {
+            // Separate bills by what they're missing (Year is checked separately in Check 2b)
+            const missingBillId = [];
+            const missingWebsiteBillId = [];
+            const missingState = [];
+            const missingBillType = [];
+            const missingBillNumber = [];
 
-            const identifier = billId || `${state?.name || 'Unknown'}-${billType?.name || ''}${billNumber || ''}`;
+            currentYearMissing.forEach(r => {
+                const billId = r.getCellValue(CONFIG.FIELDS.BILL_ID);
+                const websiteBillId = r.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID);
+                const state = r.getCellValue(CONFIG.FIELDS.STATE);
+                const billType = r.getCellValue(CONFIG.FIELDS.BILL_TYPE);
+                const billNumber = r.getCellValue(CONFIG.FIELDS.BILL_NUMBER);
+
+            const identifier = billId || websiteBillId || `${state?.name || 'Unknown'}-${billType?.name || ''}${billNumber || ''}`;
 
             if (!billId) {
                 missingBillId.push(identifier);
+            }
+            if (!websiteBillId) {
+                missingWebsiteBillId.push(identifier);
             }
             if (!state) {
                 missingState.push(identifier);
@@ -415,8 +469,8 @@ async function runPreflightValidation() {
             }
         });
 
-        // Count total critical missing (all four fields are critical for export)
-        const criticalMissingCount = missingBillId.length + missingState.length + missingBillType.length + missingBillNumber.length;
+        // Count total critical missing (all fields are critical for data integrity and export)
+        const criticalMissingCount = missingBillId.length + missingWebsiteBillId.length + missingState.length + missingBillType.length + missingBillNumber.length;
         
         // Only add to critical issues if we actually found missing fields
         if (criticalMissingCount > 0) {
@@ -424,6 +478,9 @@ async function runPreflightValidation() {
             const summaryParts = [];
             if (missingBillId.length > 0) {
                 summaryParts.push(`**BillID**: ${missingBillId.length} bills`);
+            }
+            if (missingWebsiteBillId.length > 0) {
+                summaryParts.push(`**Website Bill ID**: ${missingWebsiteBillId.length} bills`);
             }
             if (missingState.length > 0) {
                 summaryParts.push(`**State**: ${missingState.length} bills`);
@@ -440,6 +497,11 @@ async function runPreflightValidation() {
             if (missingBillId.length > 0) {
                 missingBillId.forEach(identifier => {
                     specificBills.push(`${identifier}: Missing BillID`);
+                });
+            }
+            if (missingWebsiteBillId.length > 0) {
+                missingWebsiteBillId.forEach(identifier => {
+                    specificBills.push(`${identifier}: Missing Website Bill ID`);
                 });
             }
             if (missingState.length > 0) {
@@ -468,37 +530,50 @@ async function runPreflightValidation() {
             });
             validation.passed = false;
         }
+        }
     }
     
-    // Check 4: Duplicate bills - using BillID as unique identifier
+    // Check 4: Duplicate bills - using Website Bill ID as unique identifier for export
+    // NOTE: Fetch all bills and filter in JavaScript since filterByFormula on Year field is unreliable
     const allBills = await billsTable.selectRecordsAsync({
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
     });
-    
-    const billIdMap = new Map();
-    const duplicateBillIds = [];
-    
+
+    const websiteBillIdMap = new Map();
+    const duplicateWebsiteBillIds = [];
+
     allBills.records.forEach(record => {
-        const billId = record.getCellValue(CONFIG.FIELDS.BILL_ID);
-        if (billId) {
-            if (billIdMap.has(billId)) {
-                duplicateBillIds.push({
-                    billId: billId,
+        // Filter to current year in JavaScript (more reliable than filterByFormula)
+        const yearField = record.getCellValue(CONFIG.FIELDS.YEAR);
+        const recordYear = yearField?.name || yearField;
+
+        if (recordYear != currentYear) {
+            return; // Skip bills from other years
+        }
+
+        const websiteBillId = record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID);
+        const fullBillId = record.getCellValue(CONFIG.FIELDS.BILL_ID);
+        if (websiteBillId) {
+            if (websiteBillIdMap.has(websiteBillId)) {
+                duplicateWebsiteBillIds.push({
+                    websiteBillId: websiteBillId,
+                    fullBillId: fullBillId,
+                    year: recordYear,
                     descriptor: `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || 'Unknown'}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`
                 });
             } else {
-                billIdMap.set(billId, record.id);
+                websiteBillIdMap.set(websiteBillId, record.id);
             }
         }
     });
-    
-    if (duplicateBillIds.length > 0) {
+
+    if (duplicateWebsiteBillIds.length > 0) {
         validation.critical.push({
-            type: '🔁 Duplicate BillIDs Found',
-            count: duplicateBillIds.length,
+            type: '🔁 Duplicate Website Bill IDs Found',
+            count: duplicateWebsiteBillIds.length,
             severity: 'CRITICAL',
             impact: 'Only first instance will be exported',
-            examples: duplicateBillIds.slice(0, 5).map(d => `${d.billId} (${d.descriptor})`)
+            examples: duplicateWebsiteBillIds.slice(0, 5).map(d => `${d.websiteBillId} (Full ID: ${d.fullBillId}, Year: ${d.year}, ${d.descriptor})`)
         });
         validation.passed = false;
     }
@@ -585,6 +660,16 @@ function displayValidationResults(validation) {
             if (warning.statesAffected) {
                 output.markdown(`- States affected: ${warning.statesAffected.join(', ')}`);
             }
+            if (warning.examples && warning.examples.length > 0) {
+                output.markdown(`- Examples:`);
+                warning.examples.forEach(ex => {
+                    if (typeof ex === 'string') {
+                        output.markdown(`  - ${ex}`);
+                    } else {
+                        output.markdown(`  - ${ex.bill}: ${ex.issue}`);
+                    }
+                });
+            }
             output.markdown('');
         });
     }
@@ -633,19 +718,19 @@ async function processWithProgress(records, metrics) {
                 metrics.recordDateError();
                 metrics.recordBill(record, false);
                 errors.push({
-                    bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 
+                    bill: record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || record.getCellValue(CONFIG.FIELDS.BILL_ID) ||
                          `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || ''}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
                     error: `Date validation: ${dateCheck.message}`
                 });
                 continue;
             }
-            
+
             // Validate required fields
             const validation = validateRecord(record);
             if (!validation.valid) {
                 metrics.recordBill(record, false);
                 errors.push({
-                    bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown',
+                    bill: record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || record.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown',
                     error: `Missing required fields: ${validation.missingFields.join(', ')}`
                 });
                 continue;
@@ -666,7 +751,7 @@ async function processWithProgress(records, metrics) {
         } catch (error) {
             metrics.recordBill(record, false);
             errors.push({
-                bill: record.getCellValue(CONFIG.FIELDS.BILL_ID) || 
+                bill: record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || record.getCellValue(CONFIG.FIELDS.BILL_ID) ||
                      `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || 'Unknown'}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
                 error: error.message
             });
@@ -682,16 +767,16 @@ async function processWithProgress(records, metrics) {
  * Enhanced transform function with quality tracking
  */
 async function transformRecord(record, metrics) {
-    // Extract unique bill identifier FIRST - this is critical for preventing overwrites
-    const billId = record.getCellValue(CONFIG.FIELDS.BILL_ID) || '';
+    // Extract website bill identifier FIRST - this is critical for preventing overwrites in export
+    const websiteBillId = record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || '';
 
     // Extract core bill information
     const state = record.getCellValue(CONFIG.FIELDS.STATE)?.name || '';
     const billType = record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || '';
     const billNumber = String(record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || '');
 
-    // Check for all required fields (including BillID for uniqueness)
-    const hasAllFields = billId && state && billType && billNumber;
+    // Check for all required fields (including Website Bill ID for export uniqueness)
+    const hasAllFields = websiteBillId && state && billType && billNumber;
     if (hasAllFields) {
         metrics.metrics.recordsWithAllFields++;
     }
@@ -809,7 +894,7 @@ async function transformRecord(record, metrics) {
     }
 
     return {
-        BillID: billId,  // CRITICAL: Unique identifier to prevent overwrites
+        BillID: websiteBillId,  // CRITICAL: Website Bill ID (stripped of year) to prevent overwrites
         State: state,
         BillType: billType,
         BillNumber: billNumber,
@@ -830,7 +915,7 @@ async function transformRecord(record, metrics) {
         IntroducedDate: introducedDate,
         Passed1ChamberDate: passed1ChamberDate,
         "Passed 2 Chamber": passed2ChamberStatus,
-        PassedLegislature: passedLegislatureDate, 
+        PassedLegislature: passedLegislatureDate,
         VetoedDate: vetoedDate,
         Vetoed: vetoedStatus,
         EnactedDate: enactedDate,
@@ -1010,8 +1095,8 @@ function checkDateValidation(record) {
 function validateRecord(record) {
     const missingFields = [];
 
-    // BillID is now required to ensure unique exports
-    const requiredFields = ['BILL_ID', 'STATE', 'BILL_TYPE', 'BILL_NUMBER'];
+    // Website Bill ID is required to ensure unique exports
+    const requiredFields = ['WEBSITE_BILL_ID', 'STATE', 'BILL_TYPE', 'BILL_NUMBER'];
     requiredFields.forEach(field => {
         if (!record.getCellValue(CONFIG.FIELDS[field])) {
             missingFields.push(CONFIG.FIELDS[field]);
@@ -1066,8 +1151,8 @@ function getSpecificPolicies(policyField) {
 }
 
 function checkForDuplicates() {
-    // Since we're not exporting BillID, we can't check for duplicates here
-    // The duplicate check should happen in the pre-flight validation using the Bills table
+    // Duplicate checking is handled in pre-flight validation using Website Bill IDs
+    // This function is kept for backward compatibility but returns empty array
     return [];
 }
 
@@ -1124,17 +1209,26 @@ async function generateWebsiteExport() {
         output.markdown(`⚠️ Error clearing export table: ${error.message}\n`);
     }
     
-    // Get all bills
-    const records = await billsTable.selectRecordsAsync();
-    
+    // Get bills for current year only
+    // NOTE: Fetch all bills and filter in JavaScript since filterByFormula on Year field is unreliable
+    const currentYear = new Date().getFullYear().toString();
+    const allRecords = await billsTable.selectRecordsAsync();
+
+    // Filter to current year in JavaScript
+    const currentYearRecords = allRecords.records.filter(record => {
+        const yearField = record.getCellValue(CONFIG.FIELDS.YEAR);
+        const recordYear = yearField?.name || yearField;
+        return recordYear == currentYear;
+    });
+
     // Process bills with progress tracking
-    const { exportRecords, errors } = await processWithProgress(records.records, metrics);
+    const { exportRecords, errors } = await processWithProgress(currentYearRecords, metrics);
     
     // Show processing summary
     output.markdown(`\n✅ Processing complete: ${exportRecords.length} successful, ${errors.length} failed\n`);
-    
-    // Duplicate checking is now done in pre-flight validation using BillIDs from the Bills table
-    
+
+    // Duplicate checking is now done in pre-flight validation using Website Bill IDs from the Bills table
+
     // Create export records
     let exportSuccessful = false;
     
