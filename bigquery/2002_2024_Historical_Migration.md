@@ -56,12 +56,8 @@
 3. `comprehensive_bills_authentic` - Enhanced view with dashboard helpers (preserves NULL patterns)
 4. `raw_data_tracking_by_year` - Field tracking evolution analysis (shows what was tracked when)
 
-### Field Tracking Status Views (5):
-1. `tracking_completeness_matrix` - Visual matrix showing field tracking status by year (✅/⚠️/❌)
-2. `realistic_field_tracking_by_year` - Realistic tracking patterns accounting for FALSE defaults
-3. `field_tracking_completeness_by_year` - Detailed percentage tracking by field and year
-4. `corrected_policy_tracking` - Policy fields with proper NULL patterns
-5. `bills_with_consolidated_intent` - Adds consolidated intent field and tracking indicators
+**Note on Data Quality Analysis:**
+For ad-hoc data quality and methodology analysis, use `raw_data_tracking_by_year` directly or run the query in `/bigquery/sql/data_quality_report.sql`. Additional specialized tracking views mentioned in earlier documentation drafts were not implemented - the raw tracking view contains all necessary metadata for field evolution analysis.
 
 ## Key Technical Implementation
 
@@ -257,30 +253,36 @@ Year | Bills | BillType% | IntroDate% | Abortion% | AbortTrue%
 
 **Critical Note**: Both main views preserve the NULL patterns that distinguish "not tracked that year" from "tracked but negative" - essential for authentic historical analysis.
 
-## Using the Tracking Status Views
+## Data Quality and Field Tracking Analysis
 
 ### Quick Field Tracking Check
 ```sql
--- Visual matrix showing what was tracked when
-SELECT * FROM `tracking_completeness_matrix` 
+-- Percentage tracking by field and year
+SELECT
+  data_year,
+  total_bills,
+  ROUND(abortion_tracking_pct, 1) as abortion_pct,
+  ROUND(contraception_tracking_pct, 1) as contraception_pct,
+  ROUND(period_products_tracking_pct, 1) as period_products_pct,
+  ROUND(incarceration_tracking_pct, 1) as incarceration_pct,
+  ROUND(positive_tracking_pct, 1) as positive_intent_pct,
+  ROUND(restrictive_tracking_pct, 1) as restrictive_intent_pct
+FROM `guttmacher-legislative-tracker.legislative_tracker_historical.raw_data_tracking_by_year`
 WHERE data_year IN (2002, 2006, 2016, 2019, 2023)
 ORDER BY data_year;
 ```
 
-### Detailed Tracking Analysis
-```sql
--- Percentage tracking by field and year
-SELECT data_year, contraception_tracking_pct, period_products_tracking_pct, 
-       incarceration_tracking_pct, intent_tracking_pct
-FROM `field_tracking_completeness_by_year` 
-ORDER BY data_year;
-```
+### Comprehensive Data Quality Report
+For a detailed data quality analysis with visual indicators, see:
+`/bigquery/sql/data_quality_report.sql`
 
-### Using Corrected Data
+This query provides field tracking status across all years with emoji indicators (✅/⚠️/❌) for quick assessment.
+
+### Analyzing Bills with Proper NULL Handling
 ```sql
 -- For analysis requiring proper NULL patterns
-SELECT * FROM `comprehensive_bills_authentic` 
-WHERE intent_consolidated = 'Positive' AND data_year >= 2019;
+SELECT * FROM `guttmacher-legislative-tracker.legislative_tracker_historical.comprehensive_bills_authentic`
+WHERE intent = 'Positive' AND data_year >= 2019;
 ```
 
 ## 2024 Data Migration - CSV Pipeline Success

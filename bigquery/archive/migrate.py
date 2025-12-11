@@ -552,11 +552,20 @@ class GuttmacherMigration:
             
             CASE
               WHEN positive = TRUE THEN 'Positive'
-              WHEN neutral = TRUE THEN 'Neutral' 
+              WHEN neutral = TRUE THEN 'Neutral'
               WHEN restrictive = TRUE THEN 'Restrictive'
               ELSE 'Unclassified'
             END AS intent,
-            
+
+            -- intent_consolidated handles bills with multiple intent flags
+            CASE
+              WHEN (CAST(positive AS INT64) + CAST(neutral AS INT64) + CAST(restrictive AS INT64)) > 1 THEN 'Mixed'
+              WHEN positive = TRUE THEN 'Positive'
+              WHEN neutral = TRUE THEN 'Neutral'
+              WHEN restrictive = TRUE THEN 'Restrictive'
+              ELSE 'Unclassified'
+            END AS intent_consolidated,
+
             abortion, contraception, emergency_contraception, minors, pregnancy, refusal, sex_education,
             insurance, appropriations, fetal_issues, fetal_tissue, incarceration, period_products, stis,
             legislation, resolution, ballot_initiative, constitutional_amendment, court_case,
