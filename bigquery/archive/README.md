@@ -60,4 +60,29 @@ SELECT * FROM `guttmacher-legislative-tracker.legislative_tracker_historical.all
 
 ---
 
+## Technical Note: Dependencies (Updated Dec 2025)
+
+The script now intelligently searches for its dependencies in multiple locations:
+
+**Configuration files:**
+- Searches for `.env` in: `archive/.env` → `bigquery/.env`
+- Searches for `field_mappings.yaml` in: `archive/` → `bigquery/` → `bigquery/shared/`
+- Searches for `data/` directory in: `archive/data` → `bigquery/data`
+
+**Sym links in place** (for convenience):
+- `archive/.env` → `bigquery/.env`
+- `archive/field_mappings.yaml` → `bigquery/field_mappings.yaml`
+- `archive/data` → `bigquery/data`
+
+These symlinks exist so the script can run from either the `archive/` directory or the `bigquery/` directory. This makes recovery operations more flexible if ever needed again.
+
+**If you need to run this (you shouldn't!):**
+```bash
+cd /path/to/bigquery
+./setup_migration_env.sh  # Fix authentication
+GCP_PROJECT_ID=guttmacher-legislative-tracker python3 archive/migrate.py
+```
+
+---
+
 **This script served its purpose perfectly. It's kept for historical reference and learning, but should not be used for ongoing work.**

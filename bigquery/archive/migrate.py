@@ -42,18 +42,47 @@ class GuttmacherMigration:
 
     def __init__(self):
         """Initialize the migration."""
-        load_dotenv()
-        
+        self.base_path = Path(__file__).parent
+
+        # Search for .env file in multiple locations
+        env_found = False
+        for env_path in [
+            self.base_path / ".env",           # archive/.env
+            self.base_path.parent / ".env",    # bigquery/.env
+        ]:
+            if env_path.exists():
+                load_dotenv(env_path)
+                env_found = True
+                break
+
+        if not env_found:
+            raise FileNotFoundError("Could not find .env file in archive/ or bigquery/ directory")
+
         self.project_id = os.getenv("GCP_PROJECT_ID")
         self.dataset_id = os.getenv("BQ_DATASET_ID", "legislative_tracker_historical")
-        
+
         if not self.project_id or self.project_id == "your-actual-project-id":
-            raise ValueError("Please set GCP_PROJECT_ID in .env file")
-        
+            raise ValueError(
+                f"Invalid GCP_PROJECT_ID: '{self.project_id}'. "
+                "Please set correct value in bigquery/.env file"
+            )
+
         self.bq_client = bigquery.Client(project=self.project_id)
-        self.base_path = Path(__file__).parent
-        self.data_path = self.base_path / "data"
-        
+
+        # Search for data directory in multiple locations
+        data_found = False
+        for data_path in [
+            self.base_path / "data",           # archive/data
+            self.base_path.parent / "data",    # bigquery/data
+        ]:
+            if data_path.exists():
+                self.data_path = data_path
+                data_found = True
+                break
+
+        if not data_found:
+            raise FileNotFoundError("Could not find data/ directory")
+
         # Load field mappings
         self.field_mappings = self._load_field_mappings()
         
@@ -80,12 +109,19 @@ class GuttmacherMigration:
 
     def _load_field_mappings(self) -> Dict[str, Any]:
         """Load field mappings configuration."""
-        mappings_path = self.base_path / "field_mappings.yaml"
-        if not mappings_path.exists():
-            raise FileNotFoundError(f"Field mappings file not found: {mappings_path}")
-        
-        with open(mappings_path, 'r') as f:
-            return yaml.safe_load(f)
+        # Search for field_mappings.yaml in multiple locations
+        for mappings_path in [
+            self.base_path / "field_mappings.yaml",           # archive/field_mappings.yaml
+            self.base_path.parent / "field_mappings.yaml",    # bigquery/field_mappings.yaml
+            self.base_path.parent / "shared" / "field_mappings.yaml",  # bigquery/shared/field_mappings.yaml
+        ]:
+            if mappings_path.exists():
+                with open(mappings_path, 'r') as f:
+                    return yaml.safe_load(f)
+
+        raise FileNotFoundError(
+            "Could not find field_mappings.yaml in archive/, bigquery/, or bigquery/shared/"
+        )
 
     def _create_reverse_mapping(self) -> Dict[str, str]:
         """Create reverse mapping from original field names to standardized names."""
