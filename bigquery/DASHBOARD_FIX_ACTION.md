@@ -14,14 +14,20 @@ Your Looker Studio dashboard has a broken "Data Quality Report" chart that's loo
 **Why this is probably best:** Data quality checking is something you do once in a while, not something you need on a live dashboard. Just run SQL queries in BigQuery Console when you need to check data quality.
 
 ### Option 2: Fix the chart to use the view that DOES exist (5 minutes)
+
+✅ **CONFIRMED:** The `raw_data_tracking_by_year` view EXISTS and has all the fields you need.
+
+**Quick steps:**
 1. Open Looker Studio dashboard
 2. Click on "Data Quality Report" chart
 3. Click "Data" panel on right
 4. Change data source from `tracking_completeness_matrix` to `raw_data_tracking_by_year`
-5. Rebuild the chart with these fields:
+5. Set up chart:
    - Dimension: `data_year`
-   - Metrics: `abortion_tracking_pct`, `contraception_tracking_pct`, `incarceration_tracking_pct`
+   - Metrics: `abortion_tracking_pct`, `contraception_tracking_pct`, `intent_tracking_pct`
 6. Done
+
+**Detailed step-by-step:** See `DASHBOARD_DATA_QUALITY_CHART.md`
 
 ## When You Need Data Quality Info
 
