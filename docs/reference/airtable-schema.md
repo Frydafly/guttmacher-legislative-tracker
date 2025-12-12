@@ -31,7 +31,7 @@ The Airtable base contains the following tables:
 - **BillID**: Primary unique identifier (format: `STATE-BILLTYPE-NUMBER`, e.g., `TX-HB-123`)
 - **Intent**: Classification as Positive, Neutral, or Restrictive
 - **Specific Policies**: Linked policy categories (e.g., Abortion, Contraception)
-- **Website Blurb**: Public-facing summary (required for enacted/vetoed bills)
+- **Website Blurb**: Public-facing summary (exported for enacted/vetoed bills)
 - **Review Status**: Internal workflow status (Needs Review, In Progress, Complete)
 - **Current Bill Status**: Legislative status (Introduced, In Committee, Enacted, Failed, etc.)
 

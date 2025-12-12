@@ -1,7 +1,7 @@
 ## Feb 12, 2025 \| [Leg database run through guttmacher]](https://www.google.com/calendar/event?eid=ZGViaWI0bjVqOG4xMXE0Y2YyZHI1Ym9xanMgZnJ5ZGEuZ3VlZGVzQG0)
 
 Attendees:
-[Fryda](mailto:fryda.guedes@gmail.com)<mfairbanks@guttmacher.org><tcurhan@guttmacher.org>]{.underline}
+[Fryda](mailto:fryda.guedes@gmail.com), mfairbanks@guttmacher.org, tcurhan@guttmacher.org
 
 Notes
 
@@ -94,7 +94,7 @@ Action Items:
 ## Jan 17, 2025 \| [Candace check in with Liz]](https://www.google.com/calendar/event?eid=N21lMDN1cGlhcmxmamNoczlkMjUybnN1Z2RfMjAyNTAxMTZUMjAzMDAwWiBmcnlkYS5ndWVkZXNAbQ)
 
 Attendees:
-[<cgibson@guttmacher.org><avoreconsulting@gmail.com>[Fryda](mailto:fryda.guedes@gmail.com)]{.underline}
+cgibson@guttmacher.org, avoreconsulting@gmail.com, [Fryda](mailto:fryda.guedes@gmail.com)
 
 Notes
 

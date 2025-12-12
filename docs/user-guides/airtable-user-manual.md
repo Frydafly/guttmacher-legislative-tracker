@@ -8,7 +8,7 @@
 4.  [Importing StateNet Data](#importing-statenet-data)
 5.  [Bill Processing Workflow](#bill-processing-workflow)
 6.  [Policy Categorization](#policy-categorization)
-7.  [Website Content Preparation](#website-content-preparation)
+7.  [Website Blurb Field](#website-blurb-field)
 8.  [Exporting Data](#exporting-data)
 9.  [Common Searches & Reports](#common-searches-reports)
 10. [Automations & Scripts](#automations-scripts)
