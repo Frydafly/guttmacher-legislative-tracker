@@ -24,7 +24,6 @@ The Guttmacher Legislative Tracker monitors thousands of bills across the United
 ```
 guttmacher-legislative-tracker/
 ├── README.md                           # This file
-├── CLAUDE.md                          # AI assistant guidance
 ├── airtable-scripts/                  # Airtable automation scripts
 │   ├── health-monitoring/             # Weekly health check automation
 │   │   ├── README.md                 # Detailed health monitor docs

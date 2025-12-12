@@ -16,7 +16,7 @@ etl/
 
 ### Key Benefits for Solo Developer
 1. **Smaller files** - Each module is 100-200 lines (vs 900+ line monolith)
-2. **Claude-friendly** - Claude can understand full context of each module
+2. **Maintainable** - Each module is focused and easy to understand
 3. **Incremental adoption** - Mix old and new code during transition
 4. **Future-proof** - Easy to add new data sources without breaking existing ones
 
@@ -167,7 +167,7 @@ gcloud auth application-default login
 ## Questions?
 
 The modular design makes it easy to:
-- Ask Claude about specific modules
+- Understand specific modules independently
 - Debug individual components
 - Add features incrementally
 

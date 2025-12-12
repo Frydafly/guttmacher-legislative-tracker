@@ -5,11 +5,12 @@
 *.swo
 *~
 
-# Claude AI files
+# Development artifacts
 .claude/
 claude_*
 *_claude*
 CLAUDE.md.backup*
+CLAUDE.md
 
 # OS files
 .DS_Store
