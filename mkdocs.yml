@@ -1,0 +1,95 @@
+site_name: Guttmacher Legislative Tracker
+site_description: Documentation for the Guttmacher Legislative Tracker system - Airtable automation, BigQuery analytics, and policy tracking workflows
+site_author: Guttmacher Institute
+repo_url: https://github.com/Frydafly/guttmacher-legislative-tracker
+repo_name: guttmacher-legislative-tracker
+
+theme:
+  name: material
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - minify:
+      minify_html: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: getting-started/overview.md
+    - Quick Start: getting-started/quick-start.md
+    - Architecture: getting-started/architecture.md
+  - User Guides:
+    - Airtable User Manual: user-guides/airtable-user-manual.md
+    - BigQuery for Analysts: user-guides/bigquery-for-analysts.md
+    - Running Reports: user-guides/running-reports.md
+  - Reference:
+    - Airtable Schema: reference/airtable-schema.md
+    - Airtable Formulas: reference/airtable-formulas.md
+    - Data Dictionary: reference/data-dictionary.md
+  - Technical Documentation:
+    - Deployment Guide: technical/deployment-guide.md
+    - Runbook: technical/runbook.md
+    - Security & Compliance: technical/security.md
+  - Historical Data:
+    - BigQuery Migration: historical/bigquery-migration.md
+    - Data Evolution: historical/data-evolution.md
+  - Project Planning:
+    - Regulations Tracking: planning/regulations-tracking.md
+    - Meeting Notes: planning/meeting-notes.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Frydafly/guttmacher-legislative-tracker
