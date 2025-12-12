@@ -5,10 +5,10 @@
 **Update**: Added 2023 data migration results
 
 *Link to Historical Data Spreadsheet:*
-**[[https://docs.google.com/spreadsheets/d/1iGnwiOhtZ9cXZGdl3AzbtdFpuMaJVN9SYQg\_\_WYsmRc/edit?usp=sharing]{.underline}](https://docs.google.com/spreadsheets/d/1iGnwiOhtZ9cXZGdl3AzbtdFpuMaJVN9SYQg__WYsmRc/edit?usp=sharing)\**
+**[Migration Progress Tracker](https://docs.google.com/spreadsheets/d/1iGnwiOhtZ9cXZGdl3AzbtdFpuMaJVN9SYQg__WYsmRc/edit?usp=sharing)**
 
 *Link to Looker Dashboard:*
-**[[https://lookerstudio.google.com/reporting/54fa1698-6a6f-4790-8740-56401a2e9cf7]{.underline}](https://lookerstudio.google.com/reporting/54fa1698-6a6f-4790-8740-56401a2e9cf7)**
+**[Looker Studio Dashboard](https://lookerstudio.google.com/reporting/54fa1698-6a6f-4790-8740-56401a2e9cf7)**
 
 ## Executive Summary
 

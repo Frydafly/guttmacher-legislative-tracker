@@ -201,21 +201,21 @@ Create a dedicated export button:
 
 ---
 
-### 5. Use 2025 Best Practices
+### 5. Data Visualization Approaches
 
 #### The 3-Second Rule
 
-> Each chart should tell a clear story within 3 seconds
+> Charts that communicate their main point within 3 seconds are more effective for stakeholders
 
-**Do:**
+**Effective approaches:**
 ✅ Clear chart titles: "Abortion Bills Increased 45% Since 2020"
 ✅ Prominent data labels showing key numbers
 ✅ Simple color coding (Protective=Green, Restrictive=Red, Neutral=Gray)
 
-**Don't:**
+**Less effective approaches:**
 ❌ Vague titles: "Chart 1" or "Data Visualization"
-❌ Too many colors/categories
-❌ Tiny fonts or cluttered legends
+❌ Too many colors/categories (makes trends harder to see)
+❌ Tiny fonts or cluttered legends (harder to read quickly)
 
 #### Avoid Jargon
 

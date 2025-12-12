@@ -12,6 +12,9 @@ The Guttmacher Legislative Tracker is a sophisticated data pipeline that:
 - **Generates** public-facing website content and partner reports
 - **Analyzes** historical trends via BigQuery data warehouse (2002-2024)
 
+!!! note "For Documentation Contributors"
+    [:material-file-document-edit: **Documentation Standards**](DOCUMENTATION_STANDARDS.md) - **Start here** before editing any documentation. Learn how we separate technical procedures from policy decisions.
+
 ## System Components
 
 ### Airtable (Primary System) 🏛️

@@ -2,28 +2,17 @@
 
 ## Table of Contents
 
-1.  [[System Overview]{.underline}](#system-overview)
-
-2.  [[Getting Started]{.underline}](#getting-started)
-
-3.  [[Tables & Structure]{.underline}](#tables-structure)
-
-4.  [[Importing StateNet Data]{.underline}](#importing-statenet-data)
-
-5.  [[Bill Processing Workflow]{.underline}](#bill-processing-workflow)
-
-6.  [[Policy Categorization]{.underline}](#policy-categorization)
-
-7.  [[Website Content
-    Preparation]{.underline}](#website-content-preparation)
-
-8.  [[Exporting Data]{.underline}](#exporting-data)
-
-9.  [[Common Searches & Reports]{.underline}](#common-searches-reports)
-
-10. [[Automations & Scripts]{.underline}](#automations-scripts)
-
-11. [[Troubleshooting]{.underline}](#troubleshooting)
+1.  [System Overview](#system-overview)
+2.  [Getting Started](#getting-started)
+3.  [Tables & Structure](#tables-structure)
+4.  [Importing StateNet Data](#importing-statenet-data)
+5.  [Bill Processing Workflow](#bill-processing-workflow)
+6.  [Policy Categorization](#policy-categorization)
+7.  [Website Content Preparation](#website-content-preparation)
+8.  [Exporting Data](#exporting-data)
+9.  [Common Searches & Reports](#common-searches-reports)
+10. [Automations & Scripts](#automations-scripts)
+11. [Troubleshooting](#troubleshooting)
 
 ## System Overview
 
@@ -386,11 +375,11 @@ StateNet Import\" automation:
 
     - If no, change Review Status to \"Not Tracked\" or similar
 
-### Required Manual Fields
+### Fields Filled During Bill Processing
 
-When processing a bill, staff must fill in:
+When processing a bill, these fields are typically filled in:
 
-**Policy Classification (Required):**
+**Policy Classification:**
 
 - **Action Type**: Select from dropdown (Legislation, Constitutional
   Amendment, etc.)
@@ -400,10 +389,10 @@ When processing a bill, staff must fill in:
 
 **Content Creation:**
 
-- **Internal Summary**: Write concise staff summary of bill content
+- **Internal Summary**: Concise staff summary of bill content
 
-- **Website Blurb**: Write public-facing description (for enacted/vetoed
-  bills)
+- **Website Blurb**: Public-facing description (typically filled for enacted/vetoed
+  bills that will be published)
 
 **Additional Information (As Needed):**
 
@@ -474,16 +463,29 @@ The Policy Categories table provides a structured hierarchy:
 
     - Category Intent
 
-### Best Practices
+### Categorization Workflow
 
-- **Be specific**: Select the most precise policy that applies
+Most users follow this process when categorizing bills:
 
-- **Use multiple selections**: Bills often address multiple policies
+1. **Review bill content**: Read the Description field to identify policy areas
 
-- **Check intent alignment**: Ensure the auto-populated Category Intent
-  matches your Intent selection
+2. **Select specific policies**: Click the "Specific Policies" field and search for the most precise category
 
-- **Consult colleagues**: Ask the legal team for complex legal categorizations
+3. **Add multiple if needed**: Many bills address multiple policy areas (the field allows multi-select)
+
+4. **Verify auto-population**: Check that auto-populated Category Intent matches your Intent selection
+
+5. **Coordinate on complex bills**: For bills with complex legal implications, policy team often coordinates with legal team for classification
+
+**Technical behavior**:
+- Selecting a Specific Policy automatically populates: Policy Categories, Subcategories, Headers, and Category Intent
+- Multiple policies can be selected (multi-select field)
+- Changes to policy records in the Policy Categories table affect all linked bills
+
+**Common patterns**:
+- Abortion bills often have 2-3 specific policies (e.g., "24wk ban" + "Exceptions for life")
+- Contraception bills might include both "Insurance coverage" and "Pharmacy access"
+- Complex bills may have 5+ specific policies across multiple categories
 
 ### Example Categorization
 
@@ -503,42 +505,45 @@ For a bill banning abortion after 24 weeks:
 
   - \"Restrictive\"
 
-## Website Content Preparation
+## Website Blurb Field
 
-### When to Write Website Blurbs
+### How the System Uses This Field
 
-Website blurbs are required for:
+The Website Export script publishes bills to the public Guttmacher website based on these conditions:
 
-- Bills with status \"Enacted\"
+| Bill Status | Website Blurb | Export Behavior |
+|-------------|---------------|-----------------|
+| Enacted | Filled | ✅ Included in export |
+| Enacted | Empty | ❌ Excluded from export |
+| Vetoed | Filled | ✅ Included in export |
+| Vetoed | Empty | ❌ Excluded from export |
+| Other statuses | Any | ❌ Excluded from export |
 
-- Bills with status \"Vetoed\"
+**What this means**: To publish a bill on the website, fill the Website Blurb field. To keep it internal-only, leave it empty.
 
-- Bills requiring immediate public communication
+### Field Details
 
-### Writing Website Blurbs
+- **Type**: Long text (plain text only, no formatting)
+- **Character limit**: No hard limit (200-400 characters displays best on website)
+- **Auto-populated**: No (you write this content)
+- **Used by**: Website Export script
 
-1.  Navigate to Bills table
+### Content Structure
 
-2.  Filter for enacted/vetoed bills without website blurbs
+Your team's editorial process determines the specific content based on communication priorities. Most website blurbs follow this structure:
 
-3.  Write clear, factual description in \"Website Blurb\" field
+**Template**: "[Month], [Governor name (Party)] [action] legislation ([Bill ID]) that [policy description]. [Effective date if known]."
 
-4.  Include:
+**Example**: "In April, Governor Smith (R) signed legislation (S 102) that expands Medicaid eligibility for prenatal care. The law takes effect in October."
 
-    - What the bill does
+### How to Fill This Field
 
-    - Key policy changes
+1. Open a bill record in the Bills table
+2. Scroll to the "Website Blurb" field
+3. Enter or edit plain text (formatting will not be preserved)
+4. Content will appear on the website when you run the Website Export script
 
-    - Effective date (if known)
-
-    - Impact on residents
-
-### Website Blurb Examples
-
-**Good example**: \"In April, Gov. Kay Ivey (R) signed legislation (S
-102) that provides presumptive Medicaid eligibility for coverage of
-prenatal care for pregnant people. The law is scheduled to go into
-effect in October.\"
+**Technical note**: The export script copies content from this field to the `WebsiteBlurb` column in the Website Exports table, which is used to update the public tracker.
 
 ## Exporting Data
 
@@ -751,14 +756,11 @@ The system includes several validation checks:
 
 ### External Documentation
 
-- **Airtable Formulas Guide**: [[Detailed explanation of all formula
-  fields]{.underline}](https://docs.google.com/document/d/1Vb_WtMppKcPReczRtxCA43uDJsmPzNZJJzOSJ_HVLSQ/edit?usp=share_link)
+- **Airtable Formulas Guide**: [Detailed explanation of all formula fields](https://docs.google.com/document/d/1Vb_WtMppKcPReczRtxCA43uDJsmPzNZJJzOSJ_HVLSQ/edit?usp=share_link)
 
-- **Data Dictionary**: [[Complete field reference
-  guide]{.underline}](https://docs.google.com/document/d/1v6_5XuY1ZnUfnZghHAk5UotyNmzmFdCmCB6YTDh1Ud0/edit?usp=share_link)
+- **Data Dictionary**: [Complete field reference guide](https://docs.google.com/document/d/1v6_5XuY1ZnUfnZghHAk5UotyNmzmFdCmCB6YTDh1Ud0/edit?usp=share_link)
 
-- **GitHub Repository**: [[Technical documentation and
-  scripts]{.underline}](https://github.com/Frydafly/guttmacher-legislative-tracker)
+- **GitHub Repository**: [Technical documentation and scripts](https://github.com/Frydafly/guttmacher-legislative-tracker)
 
 ### Formula Fields
 
@@ -794,5 +796,4 @@ the Airtable Formulas Guide above, including:
 - **Script Documentation**: Check GitHub repository
 
 *For additional technical documentation and script details, see the
-GitHub repository:
-[[https://github.com/Frydafly/guttmacher-legislative-tracker]{.underline}](https://github.com/Frydafly/guttmacher-legislative-tracker)*
+[GitHub repository](https://github.com/Frydafly/guttmacher-legislative-tracker)*

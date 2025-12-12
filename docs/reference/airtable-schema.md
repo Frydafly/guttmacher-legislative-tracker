@@ -215,16 +215,18 @@ Data quality tracking.
 
 **Purpose**: Public-facing description for enacted/vetoed bills
 
-**Required for**: Bills with status "Enacted" or "Vetoed"
+**Used by**: Website Export script (only exports bills with status "Enacted" or "Vetoed" AND filled Website Blurb)
 
-**Guidelines**:
-- Clear, factual description
-- Include what the bill does
-- Note effective date if known
-- Mention impact on residents
+**Content Structure**:
+
+Most website blurbs follow this structure:
+
+**Template**: "[Month], [Governor name (Party)] [action] legislation ([Bill ID]) that [policy description]. [Effective date if known]."
 
 **Example**:
-> "In April, Gov. Kay Ivey (R) signed legislation (S 102) that provides presumptive Medicaid eligibility for coverage of prenatal care for pregnant people. The law is scheduled to go into effect in October."
+> "In April, Governor Smith (R) signed legislation (S 102) that expands Medicaid eligibility for prenatal care. The law takes effect in October."
+
+**Technical note**: Content from this field is exported as plain text to the public website. Your team's editorial process determines which bills receive website blurbs.
 
 ---
 
