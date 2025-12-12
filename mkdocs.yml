@@ -73,6 +73,7 @@ nav:
   - User Guides:
     - Airtable User Manual: user-guides/airtable-user-manual.md
     - BigQuery for Analysts: user-guides/bigquery-for-analysts.md
+    - Looker Studio Guide: user-guides/looker-studio-guide.md
     - Running Reports: user-guides/running-reports.md
   - Reference:
     - Airtable Schema: reference/airtable-schema.md
@@ -82,6 +83,7 @@ nav:
     - Deployment Guide: technical/deployment-guide.md
     - Runbook: technical/runbook.md
     - Security & Compliance: technical/security.md
+    - External User Access: technical/external-user-access.md
   - Historical Data:
     - BigQuery Migration: historical/bigquery-migration.md
     - Data Evolution: historical/data-evolution.md
