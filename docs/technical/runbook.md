@@ -204,7 +204,6 @@ Monitor console output
 - Verify output format
 
 **Step 4**: Contact policy team
-- Mollie Fairbanks or Talia Curhan
 - Verify if they received report
 - Check spam folders
 
@@ -261,7 +260,7 @@ Fill in missing blurbs
 
 **Emergency procedure**:
 - If export corrupted Website Exports table
-- See [Data Recovery](#emergency-data-recovery)
+- See [Emergency: Data Deletion from Airtable](#emergency-data-deletion-from-airtable)
 
 ---
 
@@ -403,7 +402,7 @@ Example:
 
 **Step 3**: Fix History format
 If format changed:
-1. Contact Mollie/Talia about StateNet
+1. Contact the policy team about StateNet
 2. Update import automation to normalize format
 3. Update formula regex if needed
 
@@ -575,7 +574,6 @@ Is it empty? Partially populated? Bad data?
 ```
 
 **Step 2**: Contact web team
-- **Lenny Munitz** (IT/Website)
 - Advise NOT to pull latest export
 - Website may still have previous data
 
@@ -624,16 +622,16 @@ Provide to web team
 **Step 3**: Contact appropriate team member
 
 **For technical/script issues**:
-- Fryda Guedes (fryda.guedes@proton.me)
+- Contact the technical team
 
 **For policy/categorization questions**:
-- Mollie Fairbanks or Talia Curhan
+- Contact the policy team
 
 **For legal review questions**:
-- Kimya Forouzan
+- Contact the legal team
 
 **For website/IT issues**:
-- Lenny Munitz
+- Contact the web/IT team
 
 ### Creating a Good Bug Report
 

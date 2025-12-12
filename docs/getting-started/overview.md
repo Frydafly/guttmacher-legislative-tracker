@@ -31,7 +31,6 @@ The Guttmacher Legislative Tracker is a comprehensive system for monitoring, ana
 ## Who Uses It?
 
 ### Policy Team (Daily Users)
-**Mollie Fairbanks, Talia Curhan**
 
 **Tasks**:
 - Import weekly StateNet data
@@ -44,7 +43,6 @@ The Guttmacher Legislative Tracker is a comprehensive system for monitoring, ana
 ---
 
 ### Legal Team (As Needed)
-**Kimya Forouzan**
 
 **Tasks**:
 - Review complex bills for legal accuracy
@@ -69,7 +67,6 @@ The Guttmacher Legislative Tracker is a comprehensive system for monitoring, ana
 ---
 
 ### Web Team (Recipients)
-**Lenny Munitz, Devan Martin, Louis Guzik**
 
 **Tasks**:
 - Receive exported data
@@ -81,7 +78,6 @@ The Guttmacher Legislative Tracker is a comprehensive system for monitoring, ana
 ---
 
 ### Technical Maintenance
-**Fryda Guedes**
 
 **Tasks**:
 - Deploy script updates

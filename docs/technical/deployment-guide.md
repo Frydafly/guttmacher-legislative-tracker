@@ -167,8 +167,8 @@ Create `/deployments/deployment-log.md`:
 
 | Script | Version | Date | Deployed By | Git Commit | Notes |
 |--------|---------|------|-------------|------------|-------|
-| health-monitoring | v1.4 | 2025-12-12 | Fryda | abc123f | Added new quality metric |
-| website-export | v2.3 | 2025-12-10 | Fryda | def456a | Fixed blurb validation |
+| health-monitoring | v1.4 | 2025-12-12 | Tech Team | abc123f | Added new quality metric |
+| website-export | v2.3 | 2025-12-10 | Tech Team | def456a | Fixed blurb validation |
 ```
 
 **Option 2: Git Tags**
@@ -229,7 +229,7 @@ Use semantic versioning for scripts:
 - **High risk** - exports to public website
 - Always run pre-flight validation
 - Verify quality metrics after export
-- Coordinate with web team (Lenny) before deployment
+- Coordinate with web team before deployment
 - Never deploy on Friday (give time to catch issues)
 
 ### Supersedes Detector Script
@@ -302,9 +302,9 @@ Use semantic versioning for scripts:
 
 If deployment causes critical issues:
 
-- **Technical**: Fryda Guedes (fryda.guedes@proton.me)
-- **Policy Team Lead**: Mollie Fairbanks
-- **Airtable Admin**: Lenny Munitz
+- **Technical**: Contact the technical team
+- **Policy Team Lead**: Contact the policy team
+- **Airtable Admin**: Contact the IT/web team
 
 ---
 

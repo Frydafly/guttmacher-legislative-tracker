@@ -483,7 +483,7 @@ The Policy Categories table provides a structured hierarchy:
 - **Check intent alignment**: Ensure the auto-populated Category Intent
   matches your Intent selection
 
-- **Consult colleagues**: Ask Kimya for complex legal categorizations
+- **Consult colleagues**: Ask the legal team for complex legal categorizations
 
 ### Example Categorization
 
@@ -779,13 +779,13 @@ the Airtable Formulas Guide above, including:
 
 ### Getting Help
 
-- **Technical Issues**: Contact Fryda
+- **Technical Issues**: Contact the technical team
 
-- **Policy Questions**: Consult Mollie
+- **Policy Questions**: Consult the policy team
 
-- **Legal Review**: Consult Kimya
+- **Legal Review**: Consult the legal team
 
-- **Editorial Review**: Consult Candace/Mollie \_\_\_\_
+- **Editorial Review**: Consult the editorial team
 
 - **Formula Questions**: See Airtable Formulas Guide above
 

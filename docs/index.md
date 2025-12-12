@@ -14,23 +14,23 @@ The Guttmacher Legislative Tracker is a sophisticated data pipeline that:
 
 ## System Components
 
-### Airtable Database
-The operational heart of the system - a structured database that processes legislative data through review, categorization, and publication workflows.
+### Airtable (Primary System) 🏛️
+**Everything happens here.** The operational heart where all current and historical data lives. Team works here daily for tracking, categorization, dashboards, and reports.
 
 [:material-table: User Manual](user-guides/airtable-user-manual.md){ .md-button }
 [:material-database: Schema Reference](reference/airtable-schema.md){ .md-button .md-button--primary }
 
-### Automation Scripts
+### Automation Scripts 🤖
 JavaScript scripts running within Airtable that automate data quality monitoring, partner reporting, and website exports.
 
 [:material-robot: View Scripts](https://github.com/Frydafly/guttmacher-legislative-tracker/tree/main/airtable-scripts){ .md-button }
 [:material-file-document: Deployment Guide](technical/deployment-guide.md){ .md-button .md-button--primary }
 
-### BigQuery Analytics
-Historical data warehouse containing 22 years (2002-2024) of legislative data for trend analysis and reporting.
+### BigQuery (Backup & Research) 💾
+Annual backup for safekeeping and long-term historical analysis. Contains 22 years (2002-2024). Used for disaster recovery and research, not daily operations.
 
 [:material-chart-line: BigQuery for Analysts](user-guides/bigquery-for-analysts.md){ .md-button }
-[:material-history: Migration Report](historical/bigquery-migration.md){ .md-button .md-button--primary }
+[:material-calendar: Annual Operations](getting-started/annual-operations.md){ .md-button .md-button--primary }
 
 ## Quick Links
 
@@ -40,6 +40,7 @@ Historical data warehouse containing 22 years (2002-2024) of legislative data fo
     - [Running Reports](user-guides/running-reports.md) - Generate partner reports
 
 !!! info "For Technical Users"
+    - [Annual Operations](getting-started/annual-operations.md) - Yearly workflow and maintenance
     - [Deployment Guide](technical/deployment-guide.md) - How to deploy script updates
     - [Runbook](technical/runbook.md) - Troubleshooting common issues
     - [Architecture Overview](getting-started/architecture.md) - System design and data flow
@@ -59,9 +60,9 @@ Historical data warehouse containing 22 years (2002-2024) of legislative data fo
 
 ## Getting Help
 
-- **Policy Questions**: Contact Mollie Fairbanks or Kimya Forouzan
-- **Technical Issues**: Contact Fryda Guedes (fryda.guedes@proton.me)
-- **Website/IT**: Contact Lenny Munitz
+- **Policy Questions**: Contact the policy team
+- **Technical Issues**: Contact the technical team
+- **Website/IT**: Contact the web/IT team
 
 ## Project Philosophy
 

@@ -205,7 +205,7 @@ GROUP BY state;
 
 ## Getting Help
 
-- **Report formatting questions**: Contact Mollie Fairbanks
+- **Report formatting questions**: Contact the policy team
 - **Data questions**: See [Data Dictionary](../reference/data-dictionary.md)
 - **BigQuery help**: See [BigQuery Guide](bigquery-for-analysts.md)
-- **Technical issues**: Contact Fryda Guedes
+- **Technical issues**: Contact the technical team

@@ -102,7 +102,7 @@ guttmacher-legislative-tracker/
 
 **Format**: CSV with fields mapped to website requirements
 
-**→ Contact**: Mollie Fairbanks or Talia Curhan
+**→ Contact**: Policy team
 
 ---
 
@@ -179,10 +179,10 @@ guttmacher-legislative-tracker/
 - [Runbook](../technical/runbook.md) - Common issues & solutions
 - GitHub Issues - Known bugs
 
-**Step 2**: Contact appropriate person
-- **Technical issues**: Fryda Guedes (fryda.guedes@proton.me)
-- **Policy questions**: Mollie Fairbanks or Kimya Forouzan
-- **IT/Website**: Lenny Munitz
+**Step 2**: Contact appropriate team
+- **Technical issues**: Technical team
+- **Policy questions**: Policy team
+- **IT/Website**: Web/IT team
 
 ---
 

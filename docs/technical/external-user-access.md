@@ -76,7 +76,7 @@ Visit: [accounts.google.com/signup](https://accounts.google.com/signup)
 **3. Use existing email instead of creating Gmail:**
 
 - When asked for username, click **"Use your existing email instead"**
-- Enter your work or personal email (e.g., `mollie@guttmacher.org`)
+- Enter your work or personal email (e.g., `user@guttmacher.org`)
 
 **4. Create password:**
 
@@ -100,7 +100,7 @@ Visit: [accounts.google.com/signup](https://accounts.google.com/signup)
     - Access BigQuery Console with their existing email
     - Use all Google Cloud services
     - Keep their existing email provider (no Gmail required)
-    - Sign in to Google using `mollie@guttmacher.org` instead of `mollie@gmail.com`
+    - Sign in to Google using `user@guttmacher.org` instead of `user@gmail.com`
 
 **Video walkthrough:** [How to create Google Account with existing email](https://support.google.com/accounts/answer/27441)
 
@@ -647,8 +647,8 @@ Monthly security checklist:
 
 **Contact:**
 
-- Technical issues: Fryda Guedes (fryda.guedes@proton.me)
-- Policy questions: Mollie Fairbanks or Kimya Forouzan
+- Technical issues: Contact the technical team
+- Policy questions: Contact the policy team or legal team
 
 ---
 

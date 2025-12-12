@@ -548,7 +548,7 @@ Share dashboards with external partners:
 - **Dashboard questions:** Contact your Looker Studio administrator
 - **Data questions:** See [BigQuery for Analysts](bigquery-for-analysts.md)
 - **Access issues:** See [External User Access](../technical/external-user-access.md)
-- **Technical issues:** Contact Fryda Guedes (fryda.guedes@proton.me)
+- **Technical issues:** Contact the technical team
 
 ---
 

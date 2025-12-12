@@ -120,7 +120,7 @@ Data quality tracking.
 
 **Logic**: Derived from History field using complex formula
 
-**→ See**: [Status Formula](airtable-formulas.md#current-bill-status)
+**→ See**: [Airtable Formulas](airtable-formulas.md) for date extraction formulas
 
 ---
 

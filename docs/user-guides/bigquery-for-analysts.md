@@ -43,7 +43,7 @@ A beginner-friendly guide to querying 22 years of historical legislative data us
 3. **Check project list** - you should see `guttmacher-legislative-tracker`
 
 !!! warning "No Access?"
-    Contact Lenny Munitz or Fryda Guedes to request BigQuery access for the project.
+    Contact the IT/web team or technical team to request BigQuery access for the project.
 
 ### Step 2: Navigate to BigQuery
 
@@ -382,7 +382,7 @@ SELECT * FROM `your-query-here`;
 
 ### "Permission denied" Error
 
-**Solution**: Contact Lenny or Fryda for project access
+**Solution**: Contact the IT/web team or technical team for project access
 
 ### "Table not found" Error
 
@@ -484,11 +484,11 @@ Here are common research questions and how to answer them:
 
 **Data questions**: Check [Data Evolution](../historical/data-evolution.md) first
 
-**SQL questions**: Try [Stack Overflow](https://stackoverflow.com/questions/tagged/google-bigquery) or ask Fryda
+**SQL questions**: Try [Stack Overflow](https://stackoverflow.com/questions/tagged/google-bigquery) or ask the technical team
 
-**Access issues**: Contact Lenny Munitz or Fryda Guedes
+**Access issues**: Contact the IT/web team or technical team
 
-**Policy/categorization questions**: Contact Mollie Fairbanks or Kimya Forouzan
+**Policy/categorization questions**: Contact the policy team or legal team
 
 ---
 

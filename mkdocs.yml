@@ -73,6 +73,7 @@ nav:
     - Overview: getting-started/overview.md
     - Quick Start: getting-started/quick-start.md
     - Architecture: getting-started/architecture.md
+    - Annual Operations: getting-started/annual-operations.md
   - User Guides:
     - Airtable User Manual: user-guides/airtable-user-manual.md
     - BigQuery for Analysts: user-guides/bigquery-for-analysts.md

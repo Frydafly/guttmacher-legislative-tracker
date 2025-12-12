@@ -460,7 +460,7 @@ See [Runbook: Emergency Procedures](../technical/runbook.md#emergency-procedures
 ### Potential Enhancements
 
 **Airtable**:
-- Regulations tracking (proposed, see [Planning](../planning/regulations-tracking.md))
+- Regulations tracking (under consideration)
 - Enhanced dashboards/interfaces
 - Additional automation scripts
 

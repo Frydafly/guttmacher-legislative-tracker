@@ -42,3 +42,7 @@ env/
 
 # MkDocs build output
 site/
+
+# Airtable schema snapshots (dated JSONs)
+docs/schema/airtable_schema_*.json
+# Keep current_schema.md (it's versioned)

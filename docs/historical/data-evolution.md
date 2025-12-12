@@ -405,6 +405,6 @@ For details on how historical data was migrated to BigQuery, see:
 ## Questions About Data Evolution?
 
 **Contact**:
-- Historical data questions: Fryda Guedes
-- Policy methodology: Mollie Fairbanks or Kimya Forouzan
+- Historical data questions: Contact the technical team
+- Policy methodology: Contact the policy team or legal team
 - Analysis guidance: See [BigQuery for Analysts](../user-guides/bigquery-for-analysts.md)
