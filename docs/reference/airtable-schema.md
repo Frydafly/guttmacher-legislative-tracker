@@ -5,6 +5,42 @@ Quick reference for the Airtable base structure and key fields.
 !!! info "Full Details"
     For complete field documentation including automations and formulas, see the [Data Dictionary](data-dictionary.md).
 
+## Terminology
+
+### Project Names
+
+- **Guttmacher Legislative Tracker**: The overall project name (used in repository, documentation, BigQuery project)
+- **Policy Tracker**: The name of the Airtable base
+- **Legislative Tracker**: Alternate name for the system (used interchangeably)
+
+### Table Names
+
+The Airtable base contains the following tables:
+
+| Table Name | Purpose | Common Reference |
+|------------|---------|------------------|
+| **Bills** | Master legislative tracking | Main table, Bills table |
+| **StateNet Raw Import** | Landing zone for CSV imports | Import table, Raw imports |
+| **System Monitor** | Health check results and quality scores | Monitor table |
+| **Website Exports** | Formatted data for public website | Exports table |
+| **Policy Categories** | Master policy taxonomy | Categories table |
+| **Regulations** | Administrative rules and emergency regulations | Regulations table |
+
+### Key Terms
+
+- **BillID**: Primary unique identifier (format: `STATE-BILLTYPE-NUMBER`, e.g., `TX-HB-123`)
+- **Intent**: Classification as Positive, Neutral, or Restrictive
+- **Specific Policies**: Linked policy categories (e.g., Abortion, Contraception)
+- **Website Blurb**: Public-facing summary (required for enacted/vetoed bills)
+- **Review Status**: Internal workflow status (Needs Review, In Progress, Complete)
+- **Current Bill Status**: Legislative status (Introduced, In Committee, Enacted, Failed, etc.)
+
+### System Names
+
+- **StateNet**: Third-party legislative monitoring service (provides CSV imports)
+- **BigQuery**: Google Cloud data warehouse for historical analytics
+- **Looker Studio**: Visualization platform for BigQuery data
+
 ## Tables Overview
 
 ### Bills (Main Table)

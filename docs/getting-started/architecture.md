@@ -115,6 +115,12 @@ The heart of the system - a structured relational database.
 - **Structure**: Categories → Subcategories → Headers → Specific Policies
 - **Update frequency**: Rarely (policy taxonomy is stable)
 
+**Regulations** 📋
+- **Purpose**: Track state administrative rules and emergency regulations
+- **Record count**: ~96 regulations (as of 2024)
+- **Key workflows**: Emergency rule expiration monitoring, supersession detection
+- **Update frequency**: Ongoing (as regulations are issued)
+
 #### Data Flow
 
 ```mermaid
@@ -167,9 +173,57 @@ sequenceDiagram
 - **Function**: Transform Bills → Website Exports format
 - **Output**: CSV file for web team
 
+#### Supersedes Detector (Automated)
+- **Location**: `airtable-scripts/supersedes-detector/`
+- **Trigger**: Automated for new regulations
+- **Function**: Detect when regulations supersede/replace other regulations
+- **Output**: Update "Superseded By" relationships
+
 ---
 
-### 4. Historical Analytics: BigQuery
+### 4. Regulations Tracking System
+
+#### Purpose
+Monitor state administrative rulemaking beyond legislative bills - emergency regulations, standard rulemaking, guidance documents, and bulletins.
+
+#### Key Features
+
+**Emergency Rule Tracking**
+- 180-day expiration countdown
+- Automated alerts for upcoming expirations
+- Visual status indicators (🔴🟡🟢)
+
+**Regulation Types**
+- Standard Rulemaking (majority)
+- Emergency Rules (time-limited)
+- Guidance & Bulletins
+- Executive Orders related to health policy
+
+**Data Structure**
+- **Location**: Separate Airtable table in Policy Tracker base
+- **Record count**: 96+ regulations (as of 2024)
+- **Key fields**: Regulation Type, Legal Status, Expiration Date, Comment Period, Agency, Policy Categories
+
+**Automations**
+- Days Until Expiration (formula field)
+- Expiration Status indicators
+- Comment Period Days Remaining
+- Priority Alerts for team action
+
+**Documentation**
+- Setup guide: `regulations-tracking/AIRTABLE_FORMULAS_AUTOMATIONS.md`
+- Import data: `regulations-tracking/data/`
+- Proposal: `regulations-tracking/REGULATIONS_TRACKING_PROPOSAL.md`
+
+#### Integration with Bills Tracking
+- Shares Policy Categories taxonomy
+- Uses same Intent framework (Positive/Neutral/Restrictive)
+- Separate workflow but parallel structure
+- Can reference related bills via linking
+
+---
+
+### 5. Historical Analytics: BigQuery
 
 #### Purpose
 Long-term storage and analysis of 22 years of legislative data (2002-2024)
@@ -243,7 +297,7 @@ graph LR
 
 ---
 
-### 5. Outputs & Integrations
+### 6. Outputs & Integrations
 
 #### Public Website
 
@@ -460,9 +514,9 @@ See [Runbook: Emergency Procedures](../technical/runbook.md#emergency-procedures
 ### Potential Enhancements
 
 **Airtable**:
-- Regulations tracking (under consideration)
 - Enhanced dashboards/interfaces
 - Additional automation scripts
+- Extended regulations tracking features
 
 **BigQuery**:
 - Annual data append automation

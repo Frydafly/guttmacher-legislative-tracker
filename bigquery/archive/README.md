@@ -1,15 +1,38 @@
-# Archive Directory - Historical Migration Script
+# Archive Directory - Historical Documentation
 
 ## Purpose
 
-This directory contains the **completed historical migration script** that was used once to migrate 22 years of data (2002-2024) from Access databases to BigQuery.
+This directory contains historical migration scripts, completed incident documentation, and archived proposals for the BigQuery pipeline.
 
 ## What's Here
+
+### Migration Script (Completed)
 
 - **`migrate.py`** - The monolithic historical migration script
   - ✅ **STATUS**: Successfully completed migration of 2002-2024 data
   - ✅ **PURPOSE SERVED**: Loaded 22+ years, ~22,000 bills into BigQuery
   - 🚫 **DO NOT USE**: This script is retired and should not be run again
+
+### Historical Migration Documentation
+
+- **`2002_2024_Historical_Migration.md`** - Documentation of the one-time historical data migration project
+  - Complete record of the initial migration process
+  - Useful for understanding historical decisions
+  - Archived because migration is complete
+
+### Incident Reports (Resolved)
+
+- **`FIELD_FIX_SUMMARY.md`** - Summary of field mapping fixes from December 2024
+- **`DASHBOARD_DATA_QUALITY_CHART.md`** - Dashboard data quality chart incident documentation
+- **`DASHBOARD_FIX_ACTION.md`** - Dashboard fix action plan (completed)
+
+These documents are kept for historical reference but represent completed work.
+
+### Architectural Proposals
+
+- **`ARCHITECTURE_PROPOSAL.md`** - Original architecture proposal for BigQuery pipeline
+  - Historical context for system design decisions
+  - Archived because system is now implemented
 
 ## Why It's Archived
 

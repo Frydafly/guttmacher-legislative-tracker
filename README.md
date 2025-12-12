@@ -1,10 +1,11 @@
 # Guttmacher Legislative Tracker
 
-A dual-purpose repository containing:
+A multi-purpose repository containing:
 1. **Airtable automation scripts** for tracking reproductive health and gender-affirming care legislation
-2. **BigQuery components** for staging and analyzing historical legislative data
+2. **Regulations tracking** for monitoring state-level rulemaking and guidance documents
+3. **BigQuery components** for staging and analyzing historical legislative data
 
-This repository maintains critical scripts that power the Guttmacher Institute's Policy Tracker through Airtable automations, as well as tools for historical data analysis in BigQuery.
+This repository maintains critical scripts that power the Guttmacher Institute's Policy Tracker through Airtable automations, regulations tracking workflows, and tools for historical data analysis in BigQuery.
 
 ## 🎯 Project Overview
 
@@ -12,8 +13,9 @@ The Guttmacher Legislative Tracker monitors thousands of bills across the United
 
 ### Key Features
 - **Automated Health Monitoring**: Weekly data quality checks and scoring
-- **Partner Email Reports**: Bi-weekly legislative updates for stakeholders  
+- **Partner Email Reports**: Bi-weekly legislative updates for stakeholders
 - **Website Data Export**: Public-facing data transformation and validation
+- **Regulations Tracking**: Monitor state administrative rules, emergency regulations, and guidance documents
 - **Real-time Bill Tracking**: Monitor status changes across all 50 states
 - **Policy Intent Analysis**: Categorize bills as Positive, Neutral, or Restrictive
 
@@ -30,9 +32,16 @@ guttmacher-legislative-tracker/
 │   ├── partner-email-report/          # Email report automation
 │   │   ├── README.md                 # Email report documentation
 │   │   └── partner-email-report.js   # Report generation script
+│   ├── supersedes-detector/           # Regulation supersession detection
+│   │   ├── README.md                 # Detector documentation
+│   │   └── supersedes-detector.js    # Detection algorithm
 │   └── website-export/                # Public data export
 │       ├── README.md                 # Export process documentation
 │       └── website-export.js         # Export transformation script
+├── regulations-tracking/              # State regulations tracking system
+│   ├── README.md                     # Regulations tracking documentation
+│   ├── AIRTABLE_FORMULAS_AUTOMATIONS.md  # Automation setup guide
+│   └── data/                         # Import-ready CSV files
 └── bigquery/                          # BigQuery data staging components
     ├── README.md                      # BigQuery documentation
     ├── schema/                        # Table definitions
@@ -106,6 +115,24 @@ Transforms internal tracking data for public website consumption.
 - Duplicate detection and removal
 
 [View detailed documentation →](airtable-scripts/website-export/README.md)
+
+### 4. Regulations Tracking
+Monitors state-level administrative rulemaking, emergency regulations, and guidance documents that impact reproductive health policy.
+
+**Key Features**:
+- Emergency rule expiration tracking (180-day countdown)
+- Standard rulemaking process monitoring
+- Agency guidance and bulletin tracking
+- Comment period deadline management
+- Regulation supersession detection
+
+**Tracking Capabilities**:
+- 96+ regulations across multiple states
+- Enhanced legal status categorization
+- Policy category linkage (Medicaid, abortion, contraception, etc.)
+- Automated expiration alerts for emergency rules
+
+[View detailed documentation →](regulations-tracking/README.md)
 
 ## 🗄️ Database Schema
 

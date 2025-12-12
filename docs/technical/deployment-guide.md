@@ -9,36 +9,39 @@ Airtable scripts are **manually copied** from this GitHub repository into Airtab
 !!! warning "Important"
     Always test scripts in a development/test environment before deploying to production Airtable base.
 
+!!! warning "Audience"
+    This guide is for the **technical team** deploying script updates. Policy team members: you don't need to do this - the technical team handles script updates.
+
 ## Pre-Deployment Checklist
 
 Before deploying any script update, complete this checklist:
 
-- [ ] **Code reviewed**: Changes have been reviewed (by you or colleague)
-- [ ] **Tested locally**: Script runs without errors in test environment
+- [ ] **Code reviewed**: Changes have been reviewed by technical team
+- [ ] **Tested**: Script runs without errors in test environment
 - [ ] **README updated**: Script's README reflects any changes
-- [ ] **Git committed**: Changes are committed to GitHub with clear message
-- [ ] **Git tagged**: Created deployment tag (e.g., `health-monitor-v1.4-prod`)
+- [ ] **Changes saved**: Changes are saved to GitHub with clear description
 - [ ] **Stakeholders notified**: Policy team aware of changes if user-facing
 - [ ] **Backup available**: Current production script version saved
 
 ## Deployment Process
 
-### Step 1: Prepare the Script
+### Step 1: Get the Updated Script from GitHub
 
-1. **Navigate to script directory** in GitHub repo:
-   ```bash
-   cd airtable-scripts/[script-name]/
-   ```
+1. **Open GitHub in your browser**:
+   - Go to: [github.com/Frydafly/guttmacher-legislative-tracker](https://github.com/Frydafly/guttmacher-legislative-tracker)
 
-2. **Review changes** since last deployment:
-   ```bash
-   git log --oneline [last-tag]..HEAD
-   ```
+2. **Navigate to the script**:
+   - Click on the `airtable-scripts` folder
+   - Click on the script you need (e.g., `health-monitoring`)
+   - Click on the `.js` file (e.g., `health-monitoring.js`)
 
-3. **Copy script content** from GitHub:
-   - Open the `.js` file
-   - Select all content (Cmd+A / Ctrl+A)
-   - Copy to clipboard (Cmd+C / Ctrl+C)
+3. **View the raw code**:
+   - Click the "Raw" button (top right, next to "Blame")
+   - This shows the code without GitHub formatting
+
+4. **Copy the script**:
+   - Select all: Ctrl+A (Windows) or Cmd+A (Mac)
+   - Copy: Ctrl+C (Windows) or Cmd+C (Mac)
 
 ### Step 2: Backup Current Production Script
 
@@ -51,15 +54,13 @@ Before deploying any script update, complete this checklist:
 
 2. **Find the script** you're updating
 
-3. **Copy current production code** to a safe location:
-   - Select all code in Airtable editor
-   - Paste into a new file: `backup-[script-name]-[date].js`
-   - Save locally or in Google Drive
-
-4. **Document current version**:
-   - Note the git commit hash or tag
-   - Note the deployment date
-   - Save to [deployment log](#tracking-deployments)
+3. **Save a backup copy**:
+   - In Airtable, select all the code in the script editor
+   - Copy it (Ctrl+C or Cmd+C)
+   - Open a text editor (Notepad, TextEdit, Google Docs)
+   - Paste the code
+   - Save file as: `backup-health-monitoring-2025-12-12.js` (use today's date)
+   - Keep this file for at least 30 days
 
 ### Step 3: Deploy to Airtable
 
@@ -141,12 +142,12 @@ If the script causes problems:
 
 1. **Review error logs** in Airtable automation history
 
-2. **Check GitHub for differences**:
-   ```bash
-   git diff [previous-tag] [current-tag]
-   ```
+2. **Compare old vs new**:
+   - Open your backup file
+   - Open the new script from GitHub
+   - Look for differences between them
 
-3. **Fix the issue** in GitHub repo
+3. **Ask technical team to fix** the issue in GitHub
 
 4. **Test thoroughly** before re-deploying
 
@@ -156,35 +157,21 @@ If the script causes problems:
 
 ### Deployment Log
 
-Maintain a deployment log to track what's in production:
+Keep a simple log of what you deployed and when:
 
-**Option 1: Simple Markdown File**
+**Create a Google Doc or spreadsheet** with these columns:
 
-Create `/deployments/deployment-log.md`:
+| Script Name | Date Deployed | What Changed | Deployed By |
+|-------------|---------------|--------------|-------------|
+| health-monitoring | 2025-12-12 | Added new quality metric | Technical team |
+| website-export | 2025-12-10 | Fixed blurb validation | Technical team |
 
-```markdown
-# Production Deployments
+**Add a new row** each time you deploy a script update.
 
-| Script | Version | Date | Deployed By | Git Commit | Notes |
-|--------|---------|------|-------------|------------|-------|
-| health-monitoring | v1.4 | 2025-12-12 | Tech Team | abc123f | Added new quality metric |
-| website-export | v2.3 | 2025-12-10 | Tech Team | def456a | Fixed blurb validation |
-```
-
-**Option 2: Git Tags**
-
-Tag each deployment in git:
-
-```bash
-# After successful deployment
-git tag health-monitor-v1.4-prod
-git push origin health-monitor-v1.4-prod
-```
-
-View deployment history:
-```bash
-git tag -l "*-prod"
-```
+This helps you:
+- Know what version is currently running
+- Track when changes were made
+- Troubleshoot if something breaks
 
 ### Version Numbering
 
@@ -290,21 +277,11 @@ Use semantic versioning for scripts:
 
 4. **Test with real data** - not just sample data
 
-5. **Document why you made changes** in git commit messages
+5. **Document why you made changes** in your deployment log
 
 6. **Keep backups for 30 days** minimum
 
-7. **Tag all production deployments** in git
-
-8. **Monitor for 24 hours** after deployment
-
-## Emergency Contacts
-
-If deployment causes critical issues:
-
-- **Technical**: Contact the technical team
-- **Policy Team Lead**: Contact the policy team
-- **Airtable Admin**: Contact the IT/web team
+7. **Monitor for 24 hours** after deployment
 
 ---
 

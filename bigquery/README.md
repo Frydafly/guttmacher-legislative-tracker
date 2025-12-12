@@ -84,12 +84,16 @@ bigquery/
 │       └── bigquery_utils.py       # BigQuery operations
 │
 ├── 📦 HISTORICAL MIGRATION (completed)
-│   ├── archive/
-│   │   └── migrate.py              # Original historical migration script
+│   ├── archive/                    # Archived historical documentation
+│   │   ├── README.md              # Archive inventory
+│   │   ├── migrate.py             # Original historical migration script
+│   │   ├── 2002_2024_Historical_Migration.md
+│   │   ├── ARCHITECTURE_PROPOSAL.md
+│   │   └── [incident reports]     # Resolved incidents
 │   │
 │   ├── MIGRATION_SETUP.md          # Setup guide for annual pipeline
-│   ├── setup_migration_env.sh      # Environment setup script
-│   └── ARCHITECTURE_PROPOSAL.md    # Technical architecture decisions
+│   ├── MIGRATION_GUIDE.md          # Modular pipeline architecture
+│   └── setup_migration_env.sh      # Environment setup script
 │
 ├── 📊 DATA & ANALYSIS  
 │   ├── data/                       # Historical database files (.mdb/.accdb)
@@ -204,14 +208,31 @@ python3 annual/add_year.py --year 2025 --verbose
 1. **Setup issues**: Run `./setup_migration_env.sh`
 2. **Data questions**: Check `sql/` directory for example queries
 3. **Configuration**: Look at `yearly_configs/2025.yaml` template
-4. **Architecture**: Read `ARCHITECTURE_PROPOSAL.md`
+4. **Architecture**: Read archived `archive/ARCHITECTURE_PROPOSAL.md` for historical context
 
-## 📚 Additional Documentation
+## 📚 Documentation
 
-- **[Migration Setup Guide](MIGRATION_SETUP.md)** - Detailed setup instructions
-- **[Architecture Proposal](ARCHITECTURE_PROPOSAL.md)** - Technical design decisions  
-- **[Historical Migration Report](2002_2024_Historical_Migration.md)** - What was migrated
+### Active Documentation (Current Operations)
+
+- **[Migration Setup Guide](MIGRATION_SETUP.md)** - Environment setup and authentication
+- **[Migration Guide](MIGRATION_GUIDE.md)** - Guide to modular pipeline architecture
+- **[Best Practices](BEST_PRACTICES.md)** - Data handling and pipeline best practices
+- **[Quick Reference](QUICK_REFERENCE.md)** - Common commands and queries
+- **[Quick Recovery](QUICK_RECOVERY.md)** - Emergency recovery procedures
+- **[Safe Testing](SAFE_TESTING.md)** - Testing procedures to avoid production issues
+- **[Incidents Log](INCIDENTS.md)** - Record of incidents and resolutions
+
+### Historical Documentation (Archived)
+
+Located in `archive/` directory:
+
+- **[2002-2024 Historical Migration](archive/2002_2024_Historical_Migration.md)** - Completed one-time migration
+- **[Architecture Proposal](archive/ARCHITECTURE_PROPOSAL.md)** - Original technical design decisions
+- **[Field Fix Summary](archive/FIELD_FIX_SUMMARY.md)** - Resolved field mapping issues
+- **Incident Reports** - Completed dashboard and data quality fixes
+
+See [archive/README.md](archive/README.md) for complete archived documentation inventory.
 
 ---
 
-**Last Updated**: August 2025 (Annual pipeline architecture implemented)
+**Last Updated**: December 2025 (Documentation reorganized, historical files archived)

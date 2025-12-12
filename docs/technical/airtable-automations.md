@@ -155,15 +155,35 @@ All automation scripts are stored in the [`airtable-scripts/`](https://github.co
 
 ## Deployment Process
 
-All scripts follow the same deployment process:
+!!! note "For Technical Team"
+    These scripts are updated by the technical team. Policy team members can skip this section.
 
-1. **Edit**: Modify script in this repository
-2. **Test**: Run locally or in test Airtable base
-3. **Commit**: Push changes to GitHub with clear message
-4. **Deploy**: Copy from GitHub into Airtable automation
-5. **Monitor**: Check first few runs for errors
+### How Scripts Are Updated (Simple Version)
 
-**→ [Deployment Guide](deployment-guide.md)** for detailed steps
+When a script needs updating:
+
+1. **Get the new code** from GitHub:
+   - Go to [airtable-scripts folder](https://github.com/Frydafly/guttmacher-legislative-tracker/tree/main/airtable-scripts)
+   - Click on the script folder (e.g., "health-monitoring")
+   - Click on the `.js` file
+   - Click the "Raw" button (top right of code)
+   - Select all (Ctrl+A or Cmd+A) and copy (Ctrl+C or Cmd+C)
+
+2. **Update in Airtable**:
+   - Open your Airtable base
+   - Go to Automations (lightning bolt icon)
+   - Find the automation
+   - Click into the "Run script" action
+   - Select all the old code and delete it
+   - Paste the new code
+   - Click "Done"
+
+3. **Test it**:
+   - Click "Test" or "Run now" button
+   - Check that it works as expected
+   - Check the output table for results
+
+**→ [Full Deployment Guide](deployment-guide.md)** for technical details
 
 ---
 

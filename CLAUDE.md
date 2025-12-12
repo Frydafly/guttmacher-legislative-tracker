@@ -20,8 +20,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The Guttmacher Legislative Tracker is a multi-purpose repository containing:
 
 1. **Airtable automation scripts** that run within Airtable's automation platform to monitor and maintain policy tracking data
-2. **BigQuery historical data pipeline** for processing and analyzing historical legislative data from Access databases
-3. **Dashboard improvements** (planned) for external-facing legislative tracker with enhanced visualizations and user experience
+2. **Regulations tracking system** for monitoring state-level administrative rulemaking, emergency regulations, and guidance documents
+3. **BigQuery historical data pipeline** for processing and analyzing historical legislative data from Access databases
+4. **Dashboard improvements** (planned) for external-facing legislative tracker with enhanced visualizations and user experience
 
 ## Architecture
 
@@ -30,6 +31,13 @@ The Guttmacher Legislative Tracker is a multi-purpose repository containing:
 - **No external dependencies**: Scripts cannot use npm packages or external libraries
 - **Database**: Airtable base with four main tables: Bills, StateNet Raw Import, System Monitor, Website Exports
 - **Deployment**: Scripts are manually copied from this repository into Airtable automation script steps
+
+### Regulations Tracking (`regulations-tracking/`)
+- **Platform**: Airtable-based system for monitoring state administrative rules and regulations
+- **Data Sources**: StateNet CSV exports, manual data entry
+- **Key Features**: Emergency rule expiration tracking (180-day countdown), supersession detection, comment period monitoring
+- **Documentation**: Complete setup guides in AIRTABLE_FORMULAS_AUTOMATIONS.md and README.md
+- **Current Scale**: 96+ regulations tracked across multiple states
 
 ### BigQuery Pipeline (`bigquery/`)
 - **Platform**: Python scripts that run locally or in cloud environments
@@ -42,7 +50,12 @@ The Guttmacher Legislative Tracker is a multi-purpose repository containing:
 ### Airtable Scripts
 1. **health-monitoring.js**: Weekly automated health checks that calculate data quality scores and identify issues
 2. **partner-email-report.js**: Bi-weekly report generator that creates HTML/text emails about recent legislative activity
-3. **website-export.js**: Manual export script that transforms bill data for public website consumption
+3. **supersedes-detector.js**: Detects when regulations supersede or replace other regulations based on citation patterns
+4. **website-export.js**: Manual export script that transforms bill data for public website consumption
+
+### Regulations Tracking
+1. **AIRTABLE_FORMULAS_AUTOMATIONS.md**: Setup guide for formula fields and automations
+2. **CSV import files**: Pre-processed regulation data ready for Airtable import
 
 ### BigQuery Pipeline
 1. **migration_pipeline.py**: Single script for one-time historical data migration (2002-2024)
@@ -97,13 +110,13 @@ python etl/migration_pipeline.py
 ## Dashboard Improvements (In Progress)
 
 ### Current Status
-- **Date**: September 18, 2025
+- **Date**: September 18, 2024
 - **Phase**: Requirements gathering and feasibility assessment
 - **Stakeholders**: Candace, Liz, Mollie
 - **Awaiting**: Response on priorities and timeline
 
 ### Current External-Facing Tracker Analysis
-Based on screenshots reviewed 9/18/25:
+Based on screenshots reviewed 9/18/24:
 - 3-page Airtable Interface (Bills Overview, Bills Details, Policy Categories)
 - Tracking 1,956 bills for 2025 session
 - Has basic charts but lacks narrative summaries and geographic visualization
@@ -164,6 +177,11 @@ guttmacher-legislative-tracker/
 │   ├── partner-email-report/
 │   ├── supersedes-detector/
 │   └── website-export/
+├── regulations-tracking/       # State regulations tracking system
+│   ├── README.md             # Regulations tracking documentation
+│   ├── AIRTABLE_FORMULAS_AUTOMATIONS.md  # Automation setup guide
+│   ├── REGULATIONS_TRACKING_PROPOSAL.md  # Original proposal
+│   └── data/                 # Import-ready CSV files
 ├── bigquery/                   # BigQuery historical data pipeline
 │   ├── venv/                  # Virtual environment (NOT in git)
 │   ├── .env                   # Environment config (NOT in git)
