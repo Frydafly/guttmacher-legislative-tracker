@@ -51,6 +51,9 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - tables
   - attr_list
   - md_in_html
@@ -87,9 +90,6 @@ nav:
   - Historical Data:
     - BigQuery Migration: historical/bigquery-migration.md
     - Data Evolution: historical/data-evolution.md
-  - Project Planning:
-    - Regulations Tracking: planning/regulations-tracking.md
-    - Meeting Notes: planning/meeting-notes.md
 
 extra:
   social:
