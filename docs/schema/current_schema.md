@@ -1,8 +1,17 @@
-# Airtable Schema Snapshot
+# Airtable Schema Snapshot (December 12, 2025)
 
-**Captured**: 2025-12-12 11:03:34 UTC
+!!! info "Snapshot Information"
+    **Captured**: December 12, 2025 at 11:03:34 UTC
+    **Base ID**: `appmy06ZrdLluxVD0`
+    **Purpose**: Point-in-time snapshot of Airtable table structures and field definitions
 
-**Base ID**: `appmy06ZrdLluxVD0`
+!!! warning "This is a snapshot"
+    This schema was exported on December 12, 2025. Field definitions may have changed since then. To export a fresh schema, run:
+    ```bash
+    cd bigquery
+    source venv/bin/activate
+    python etl/export_airtable_schema.py
+    ```
 
 ## StateNet Raw Import
 
