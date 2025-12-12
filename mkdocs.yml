@@ -81,9 +81,11 @@ nav:
     - Running Reports: user-guides/running-reports.md
   - Reference:
     - Airtable Schema: reference/airtable-schema.md
+    - Current Schema Snapshot: schema/current_schema.md
     - Airtable Formulas: reference/airtable-formulas.md
     - Data Dictionary: reference/data-dictionary.md
   - Technical Documentation:
+    - Airtable Automations: technical/airtable-automations.md
     - Deployment Guide: technical/deployment-guide.md
     - Runbook: technical/runbook.md
     - Security & Compliance: technical/security.md
