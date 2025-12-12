@@ -1,4 +1,4 @@
-## Feb 12, 2025 \| [Leg database run through guttmacher]](https://www.google.com/calendar/event?eid=ZGViaWI0bjVqOG4xMXE0Y2YyZHI1Ym9xanMgZnJ5ZGEuZ3VlZGVzQG0)
+## Feb 12, 2025 \| [Leg database run through guttmacher](https://www.google.com/calendar/event?eid=ZGViaWI0bjVqOG4xMXE0Y2YyZHI1Ym9xanMgZnJ5ZGEuZ3VlZGVzQG0)
 
 Attendees:
 [Fryda](mailto:fryda.guedes@gmail.com), mfairbanks@guttmacher.org, tcurhan@guttmacher.org
@@ -6,7 +6,7 @@ Attendees:
 Notes
 
 - Tracking this meeting here: ​[Tracker - Workflow
-  Design]](https://docs.google.com/spreadsheets/d/1rW7a67vG3LnZT2nCd1zZErRFIq9yQHoVJp70HF2d5RQ/edit?usp=sharing)
+  Design](https://docs.google.com/spreadsheets/d/1rW7a67vG3LnZT2nCd1zZErRFIq9yQHoVJp70HF2d5RQ/edit?usp=sharing)
 
 Action items
 
@@ -23,8 +23,8 @@ Randall\<krandall@guttmacher.org\>Lenny
 Munitz\<lmunitz@guttmacher.org\>Louis
 Guzik\<lguzik@guttmacher.org\>Devan
 Martin\<dmartin@guttmacher.org\>Rebecca
-Wind\<[rwind@guttmacher.org]](mailto:rwind@guttmacher.org)\>;
-[Fryda]](mailto:fryda.guedes@gmail.com)
+Wind\<[rwind@guttmacher.org](mailto:rwind@guttmacher.org)\>;
+[Fryda](mailto:fryda.guedes@gmail.com)
 
 Notes:
 
@@ -91,7 +91,7 @@ Action Items:
 
 ## 
 
-## Jan 17, 2025 \| [Candace check in with Liz]](https://www.google.com/calendar/event?eid=N21lMDN1cGlhcmxmamNoczlkMjUybnN1Z2RfMjAyNTAxMTZUMjAzMDAwWiBmcnlkYS5ndWVkZXNAbQ)
+## Jan 17, 2025 \| [Candace check in with Liz](https://www.google.com/calendar/event?eid=N21lMDN1cGlhcmxmamNoczlkMjUybnN1Z2RfMjAyNTAxMTZUMjAzMDAwWiBmcnlkYS5ndWVkZXNAbQ)
 
 Attendees:
 cgibson@guttmacher.org, avoreconsulting@gmail.com, [Fryda](mailto:fryda.guedes@gmail.com)
@@ -120,16 +120,16 @@ Notes
 Action items
 
 - Airtable view only link:
-  [https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts]](https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts)
+  [https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts](https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts)
 
 - Policy Design Document:
-  [https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts]](https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts)
+  [https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts](https://airtable.com/invite/l?inviteId=invjH1FjbGVmzXDx5&inviteToken=3f62b7ea7351cf668ee0336bc46d5c366941d21ca18a164d4a4ed1d22b2461bb&utm_medium=email&utm_source=product_team&utm_content=transactional-alerts)
 
 - Fryda to create document → subpolicy and policy categories and also
   include FORMULAS that create!
 
   - Formula Doc [Airtable
-    Formulas]](https://docs.google.com/document/d/1Vb_WtMppKcPReczRtxCA43uDJsmPzNZJJzOSJ_HVLSQ/edit?usp=sharing)
+    Formulas](https://docs.google.com/document/d/1Vb_WtMppKcPReczRtxCA43uDJsmPzNZJJzOSJ_HVLSQ/edit?usp=sharing)
 
   - Categories
 
@@ -147,17 +147,17 @@ Action items
     **and** Airtable, until we are comfortable SOLELY doing airtable
 
 - Created a folder for all the docs to go in [Guttmacher Team Tracker
-  Docs]](https://drive.google.com/drive/folders/194EEgaAJTUmINbG6b63DJB3wTQw5fIcc?usp=sharing)
+  Docs](https://drive.google.com/drive/folders/194EEgaAJTUmINbG6b63DJB3wTQw5fIcc?usp=sharing)
 
 ## 
 
 ## 
 
-## Dec 20, 2024 \| [Fryda / Krystal]](https://www.google.com/calendar/event?eid=cTZjcDVtNW9kdmtjYzlvYXByYmZ2MDdzZmMgZnJ5ZGEuZ3VlZGVzQG0)
+## Dec 20, 2024 \| [Fryda / Krystal](https://www.google.com/calendar/event?eid=cTZjcDVtNW9kdmtjYzlvYXByYmZ2MDdzZmMgZnJ5ZGEuZ3VlZGVzQG0)
 
-Attendees: [Fryda]](mailto:fryda.guedes@gmail.com)
-[kleaphart@guttmacher.org]](mailto:kleaphart@guttmacher.org)
-[avoreconsulting@gmail.com]](mailto:avoreconsulting@gmail.com)
+Attendees: [Fryda](mailto:fryda.guedes@gmail.com)
+[kleaphart@guttmacher.org](mailto:kleaphart@guttmacher.org)
+[avoreconsulting@gmail.com](mailto:avoreconsulting@gmail.com)
 
 Notes
 
@@ -178,11 +178,11 @@ Action items
 
 ## 
 
-## Dec 19, 2024 \| [Meet with Fryda (Lenny Munitz)]](https://www.google.com/calendar/event?eid=Yml2OHM2ZW1sYnJ0bmRvcjJyM29uNWd0am8gZnJ5ZGEuZ3VlZGVzQG0)
+## Dec 19, 2024 \| [Meet with Fryda (Lenny Munitz)](https://www.google.com/calendar/event?eid=Yml2OHM2ZW1sYnJ0bmRvcjJyM29uNWd0am8gZnJ5ZGEuZ3VlZGVzQG0)
 
 Attendees:
-[lmunitz@guttmacher.org]](mailto:lmunitz@guttmacher.org)
-[Fryda]](mailto:fryda.guedes@gmail.com)
+[lmunitz@guttmacher.org](mailto:lmunitz@guttmacher.org)
+[Fryda](mailto:fryda.guedes@gmail.com)
 
 Questions for Lenny
 
@@ -238,11 +238,11 @@ Action items
 
 ## 
 
-## Dec 19, 2024 \| [Kimya/Fryda]](https://www.google.com/calendar/event?eid=NjZmOHRlbWV1Y2tucDhtYzVzY3YzdG11OTUgZnJ5ZGEuZ3VlZGVzQG0)
+## Dec 19, 2024 \| [Kimya/Fryda](https://www.google.com/calendar/event?eid=NjZmOHRlbWV1Y2tucDhtYzVzY3YzdG11OTUgZnJ5ZGEuZ3VlZGVzQG0)
 
-Attendees: [Fryda]](mailto:fryda.guedes@gmail.com)
-[kforouzan@guttmacher.org]](mailto:kforouzan@guttmacher.org)
-[avoreconsulting@gmail.com]](mailto:avoreconsulting@gmail.com)
+Attendees: [Fryda](mailto:fryda.guedes@gmail.com)
+[kforouzan@guttmacher.org](mailto:kforouzan@guttmacher.org)
+[avoreconsulting@gmail.com](mailto:avoreconsulting@gmail.com)
 
 **Questions**
 
@@ -322,17 +322,17 @@ Notes
 Action items
 
 - ~~Can you send me some sample reports you try to put together?
-  [https://www.guttmacher.org/2024/12/state-policy-trends-2024-anti-abortion-policymakers-redouble-attacks-bodily-autonomy]](https://www.guttmacher.org/2024/12/state-policy-trends-2024-anti-abortion-policymakers-redouble-attacks-bodily-autonomy)~~
+  [https://www.guttmacher.org/2024/12/state-policy-trends-2024-anti-abortion-policymakers-redouble-attacks-bodily-autonomy](https://www.guttmacher.org/2024/12/state-policy-trends-2024-anti-abortion-policymakers-redouble-attacks-bodily-autonomy)~~
 
 ## 
 
 ## 
 
-## Dec 18, 2024 \| [Meet with Fryda (Talia Curhan)]](https://www.google.com/calendar/event?eid=bjRjdWQzMGdtNm9ib2lubjJxMjRwMmZxZ2sgZnJ5ZGEuZ3VlZGVzQG0)
+## Dec 18, 2024 \| [Meet with Fryda (Talia Curhan)](https://www.google.com/calendar/event?eid=bjRjdWQzMGdtNm9ib2lubjJxMjRwMmZxZ2sgZnJ5ZGEuZ3VlZGVzQG0)
 
-Attendees: [Fryda]](mailto:fryda.guedes@gmail.com)
-[tcurhan@guttmacher.org]](mailto:tcurhan@guttmacher.org)
-[avoreconsulting@gmail.com]](mailto:avoreconsulting@gmail.com)
+Attendees: [Fryda](mailto:fryda.guedes@gmail.com)
+[tcurhan@guttmacher.org](mailto:tcurhan@guttmacher.org)
+[avoreconsulting@gmail.com](mailto:avoreconsulting@gmail.com)
 
 Current Understanding to Verify
 
@@ -364,7 +364,7 @@ Key Questions
           those, statenet has their own term searches to collect
           similar.
 
-      ii. [reports@statenet.com]](mailto:reports@statenet.com)
+      ii. [reports@statenet.com](mailto:reports@statenet.com)
 
       iii. Key words AND Categories
 
@@ -551,23 +551,23 @@ Meeting Notes
 
 Action items
 
-- [tcurhan@guttmacher.org]](mailto:tcurhan@guttmacher.org)
+- [tcurhan@guttmacher.org](mailto:tcurhan@guttmacher.org)
   forwards Fryda lots of the statenet emails that are topic based that
   they receive
 
 - Maybe fryda gets statenet login
 
-- [tcurhan@guttmacher.org]](mailto:tcurhan@guttmacher.org)
+- [tcurhan@guttmacher.org](mailto:tcurhan@guttmacher.org)
   writes some very basic plain language questions to ask the database as
   a check box for fryda
 
 ## 
 
-## Dec 16, 2024 \| [Fryda / Liz]](https://www.google.com/calendar/event?eid=OWRrYTB1aWJsNWNqbHVpdmkzdGQ4Z25uYzAgZnJ5ZGEuZ3VlZGVzQG0)
+## Dec 16, 2024 \| [Fryda / Liz](https://www.google.com/calendar/event?eid=OWRrYTB1aWJsNWNqbHVpdmkzdGQ4Z25uYzAgZnJ5ZGEuZ3VlZGVzQG0)
 
 Attendees:
-[liz.avore@gmail.com]](mailto:liz.avore@gmail.com)
-[Fryda]](mailto:fryda.guedes@gmail.com)
+[liz.avore@gmail.com](mailto:liz.avore@gmail.com)
+[Fryda](mailto:fryda.guedes@gmail.com)
 
 **Initial Project Scoping Meeting with Liz**
 
