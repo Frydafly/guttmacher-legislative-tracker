@@ -2,7 +2,7 @@
 // Purpose: Full export with real-time validation, quality reports, and change tracking
 // Version: Enhanced with Smart Validation & GitHub Integration (June 2025)
 // Source: https://github.com/Frydafly/guttmacher-legislative-tracker
-// 
+//
 // This script is version controlled in GitHub. For updates, bug reports, or questions:
 // - Repository: https://github.com/Frydafly/guttmacher-legislative-tracker
 // - Documentation: See README.md in the airtable-scripts/website-export/ directory
@@ -31,10 +31,10 @@ const CONFIG = {
         DATE_VALIDATION: 'Date Validation',
         STATUS: 'Current Bill Status'
     },
-    
+
     // Quality tracking tables
     QUALITY_REPORTS_TABLE: 'Export Quality Reports',
-    
+
     // Subpolicies that are no longer supported by the website team
     UNSUPPORTED_SUBPOLICIES: [
         "AB Misc Neutral",
@@ -55,7 +55,7 @@ const CONFIG = {
         "Sed Ed STI Neutral",
         "Repeals Ban on D and E Method"
     ],
-    
+
     // Quality thresholds
     QUALITY_THRESHOLDS: {
         CRITICAL_SCORE: 50,        // Below this is critical
@@ -78,12 +78,12 @@ class QualityMetrics {
             recordsWithExportedBlurb: 0,
             blurbProcessingFailures: 0,
             recordsMissingDates: 0,
-            
+
             // Accuracy metrics
             dateValidationErrors: 0,
             duplicateBills: 0,
             dataFormatErrors: 0,
-            
+
             // Coverage metrics
             statesRepresented: new Set(),
             policiesUsed: new Set(),
@@ -93,18 +93,18 @@ class QualityMetrics {
                 restrictive: 0,
                 none: 0
             },
-            
+
             // Processing metrics
             successfulTransforms: 0,
             failedTransforms: 0,
             warnings: [],
-            
+
             // Validation override tracking
             proceededDespiteCriticalIssues: false,
             criticalIssuesIgnored: []
         };
     }
-    
+
     recordBill(record, success = true) {
         this.metrics.totalRecords++;
         if (success) {
@@ -113,13 +113,13 @@ class QualityMetrics {
             this.metrics.failedTransforms++;
         }
     }
-    
+
     recordState(state) {
         if (state) {
             this.metrics.statesRepresented.add(state);
         }
     }
-    
+
     recordPolicy(policies) {
         if (Array.isArray(policies)) {
             policies.forEach(p => {
@@ -129,7 +129,7 @@ class QualityMetrics {
             });
         }
     }
-    
+
     recordIntent(hasPositive, hasNeutral, hasRestrictive) {
         if (hasPositive) {
           this.metrics.intentDistribution.positive++;
@@ -144,7 +144,7 @@ class QualityMetrics {
             this.metrics.intentDistribution.none++;
         }
     }
-    
+
     recordBlurbProcessing(hasSourceBlurb, hasExportedBlurb) {
         if (hasSourceBlurb) {
             this.metrics.recordsWithSourceBlurb++;
@@ -155,15 +155,15 @@ class QualityMetrics {
             }
         }
     }
-    
+
     recordDateError() {
         this.metrics.dateValidationErrors++;
     }
-    
+
     addWarning(warning) {
         this.metrics.warnings.push(warning);
     }
-    
+
     recordCriticalIssuesIgnored(criticalIssues) {
         this.metrics.proceededDespiteCriticalIssues = true;
         this.metrics.criticalIssuesIgnored = criticalIssues.map(issue => ({
@@ -172,27 +172,27 @@ class QualityMetrics {
             impact: issue.impact
         }));
     }
-    
+
     calculateQualityScore() {
         // Adjusted scoring for realistic expectations
-        
+
         // Completeness score (30%) - Focus on basic fields plus blurb fidelity
         const fieldCompleteness = (this.metrics.recordsWithAllFields / this.metrics.totalRecords * 100);
-        const blurbFidelity = this.metrics.recordsWithSourceBlurb > 0 ? 
+        const blurbFidelity = this.metrics.recordsWithSourceBlurb > 0 ?
             (this.metrics.recordsWithExportedBlurb / this.metrics.recordsWithSourceBlurb * 100) : 100;
         const completenessScore = (fieldCompleteness * 0.7) + (blurbFidelity * 0.3);
-        
+
         // Accuracy score (50%) - Most important for export
         const errorRate = (this.metrics.dateValidationErrors + this.metrics.dataFormatErrors) / this.metrics.totalRecords;
         const accuracyScore = Math.max(0, 100 - (errorRate * 20)); // Less harsh penalty
-        
+
         // Consistency score (20%)
         const duplicateRate = this.metrics.duplicateBills / this.metrics.totalRecords;
         const consistencyScore = Math.max(0, 100 - (duplicateRate * 100));
-        
+
         // Weighted total - emphasize what actually matters for export
         const totalScore = (completenessScore * 0.3) + (accuracyScore * 0.5) + (consistencyScore * 0.2);
-        
+
         return {
             total: Math.round(totalScore),
             completeness: Math.round(completenessScore),
@@ -201,7 +201,7 @@ class QualityMetrics {
             grade: this.getGrade(totalScore)
         };
     }
-    
+
     getGrade(score) {
         if (score >= 95) {
           return 'A+';
@@ -220,15 +220,15 @@ class QualityMetrics {
         }
         return 'F';
     }
-    
+
     getDuration() {
         return (Date.now() - this.startTime) / 1000; // seconds
     }
-    
+
     generateReport() {
         const score = this.calculateQualityScore();
         const duration = this.getDuration();
-        
+
         return {
             summary: {
                 date: new Date().toISOString(),
@@ -242,7 +242,7 @@ class QualityMetrics {
                 recordsWithSourceBlurb: this.metrics.recordsWithSourceBlurb,
                 recordsWithExportedBlurb: this.metrics.recordsWithExportedBlurb,
                 blurbProcessingFailures: this.metrics.blurbProcessingFailures,
-                blurbFidelityPercent: this.metrics.recordsWithSourceBlurb > 0 ? 
+                blurbFidelityPercent: this.metrics.recordsWithSourceBlurb > 0 ?
                     (this.metrics.recordsWithExportedBlurb / this.metrics.recordsWithSourceBlurb * 100).toFixed(1) : '100.0'
             },
             accuracy: {
@@ -259,11 +259,11 @@ class QualityMetrics {
             recommendations: this.generateRecommendations()
         };
     }
-    
+
     generateRecommendations() {
         const recs = [];
         const score = this.calculateQualityScore();
-        
+
         // Critical recommendations
         if (score.total < CONFIG.QUALITY_THRESHOLDS.CRITICAL_SCORE) {
             recs.push({
@@ -272,10 +272,10 @@ class QualityMetrics {
                 action: 'Review data entry processes immediately'
             });
         }
-        
+
         // Blurb processing failures (should be 0 for 100% fidelity)
         if (this.metrics.blurbProcessingFailures > 0) {
-            const fidelityPercent = this.metrics.recordsWithSourceBlurb > 0 ? 
+            const fidelityPercent = this.metrics.recordsWithSourceBlurb > 0 ?
                 (this.metrics.recordsWithExportedBlurb / this.metrics.recordsWithSourceBlurb * 100) : 100;
             recs.push({
                 priority: 'HIGH',
@@ -283,7 +283,7 @@ class QualityMetrics {
                 action: 'CRITICAL: Review blurb processing logic - all existing blurbs must export'
             });
         }
-        
+
         // Date errors - ANY date error is critical
         if (this.metrics.dateValidationErrors > 0) {
             recs.push({
@@ -292,7 +292,7 @@ class QualityMetrics {
                 action: 'CRITICAL: Fix all date validation issues before export'
             });
         }
-        
+
         // State coverage
         if (this.metrics.statesRepresented.size < 40) {
             recs.push({
@@ -301,28 +301,28 @@ class QualityMetrics {
                 action: 'Verify data imports for missing states'
             });
         }
-        
+
         return recs;
     }
 }
 
 /**
  * Pre-flight validation with detailed reporting
- * 
+ *
  * Note: This function only adds issues to the critical array when there are actual problems.
  * If all checks pass (e.g., 0 missing fields), no critical issues are displayed and the
  * export proceeds automatically without user prompts.
  */
 async function runPreflightValidation() {
     output.markdown('## 🔍 Pre-flight Validation\n');
-    
+
     const validation = {
         passed: true,
         critical: [],
         warnings: [],
         info: []
     };
-    
+
     const billsTable = base.getTable('Bills');
 
     // Get current year for filtering - only validate bills we're about to export
@@ -332,18 +332,25 @@ async function runPreflightValidation() {
     output.markdown('Checking data quality...\n');
 
     // Check 1: Date validation issues - check for records with the 🚫 emoji (which means actual date issues)
-    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
-    const dateIssueCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `FIND('🚫', {Date Validation}) > 0`,
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula is not a valid option
+    const dateIssueCheckAll = await billsTable.selectRecordsAsync({
         fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.DATE_VALIDATION, CONFIG.FIELDS.STATE]
     });
+    const dateIssueCheck = {
+        records: dateIssueCheckAll.records.filter(r => {
+            const val = r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
+            return val && typeof val === 'string' && val.includes('🚫');
+        })
+    };
 
     if (dateIssueCheck.records.length > 0) {
         // Filter to current year and only include records that actually have the emoji in the text
         const actualIssues = dateIssueCheck.records.filter(r => {
             const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
-            const recordYear = yearField?.name || yearField;
-            if (recordYear != currentYear) return false;
+            // Year is now a multi-select field (array) with potential year spans
+            const years = Array.isArray(yearField) ? yearField.map(y => y.name || y) : [];
+            const matchesCurrentYear = years.some(y => yearMatchesOrInSpan(y, currentYear));
+            if (!matchesCurrentYear) return false;
 
             const val = r.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
             return val && typeof val === 'string' && val.includes('🚫');
@@ -363,23 +370,30 @@ async function runPreflightValidation() {
             validation.passed = false;
         }
     }
-    
+
     // Check 2: Website blurbs (informational only)
-    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
-    const blurbCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `AND(
-            OR({Current Bill Status} = 'Enacted', {Current Bill Status} = 'Vetoed'),
-            OR({Website Blurb} = '', {Website Blurb} = BLANK())
-        )`,
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATUS, CONFIG.FIELDS.STATE]
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula is not a valid option
+    const blurbCheckAll = await billsTable.selectRecordsAsync({
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATUS, CONFIG.FIELDS.STATE, CONFIG.FIELDS.WEBSITE_BLURB]
     });
+    const blurbCheck = {
+        records: blurbCheckAll.records.filter(r => {
+            const status = r.getCellValue(CONFIG.FIELDS.STATUS);
+            const statusName = status?.name || status;
+            const isEnactedOrVetoed = statusName === 'Enacted' || statusName === 'Vetoed';
+            const websiteBlurb = r.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
+            const blurbIsEmpty = !websiteBlurb || websiteBlurb === '';
+            return isEnactedOrVetoed && blurbIsEmpty;
+        })
+    };
 
     if (blurbCheck.records.length > 0) {
         // Filter to current year in JavaScript
         const currentYearBlurbs = blurbCheck.records.filter(r => {
             const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
-            const recordYear = yearField?.name || yearField;
-            return recordYear == currentYear;
+            // Year is now a multi-select field (array) with potential year spans
+            const years = Array.isArray(yearField) ? yearField.map(y => y.name || y) : [];
+            return years.some(y => yearMatchesOrInSpan(y, currentYear));
         });
 
         if (currentYearBlurbs.length > 0) {
@@ -395,10 +409,16 @@ async function runPreflightValidation() {
     }
 
     // Check 2b: Bills missing Year field entirely
-    const missingYearCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `{Year} = BLANK()`,
-        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
+    const missingYearCheckAll = await billsTable.selectRecordsAsync({
+        fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER, CONFIG.FIELDS.YEAR]
     });
+    const missingYearCheck = {
+        records: missingYearCheckAll.records.filter(r => {
+            const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
+            // Year is now a multi-select field (array) - check if empty or missing
+            return !yearField || (Array.isArray(yearField) && yearField.length === 0);
+        })
+    };
 
     if (missingYearCheck.records.length > 0) {
         validation.warnings.push({
@@ -415,24 +435,27 @@ async function runPreflightValidation() {
     }
 
     // Check 3: Missing required fields - current year bills without BillID, Website Bill ID, State, BillType, or BillNumber
-    // NOTE: Fetch all and filter in JavaScript since filterByFormula on Year field is unreliable
-    const missingFieldsCheck = await billsTable.selectRecordsAsync({
-        filterByFormula: `OR(
-            {BillID} = BLANK(),
-            {Website Bill ID} = BLANK(),
-            {State} = BLANK(),
-            {BillType} = BLANK(),
-            {BillNumber} = BLANK()
-        )`,
+    // NOTE: Fetch all and filter in JavaScript since filterByFormula is not a valid option
+    const missingFieldsCheckAll = await billsTable.selectRecordsAsync({
         fields: [CONFIG.FIELDS.BILL_ID, CONFIG.FIELDS.WEBSITE_BILL_ID, CONFIG.FIELDS.YEAR, CONFIG.FIELDS.STATE, CONFIG.FIELDS.BILL_TYPE, CONFIG.FIELDS.BILL_NUMBER]
     });
+    const missingFieldsCheck = {
+        records: missingFieldsCheckAll.records.filter(r => {
+            return !r.getCellValue(CONFIG.FIELDS.BILL_ID) ||
+                   !r.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) ||
+                   !r.getCellValue(CONFIG.FIELDS.STATE) ||
+                   !r.getCellValue(CONFIG.FIELDS.BILL_TYPE) ||
+                   !r.getCellValue(CONFIG.FIELDS.BILL_NUMBER);
+        })
+    };
 
     if (missingFieldsCheck.records.length > 0) {
         // Filter to current year in JavaScript
         const currentYearMissing = missingFieldsCheck.records.filter(r => {
             const yearField = r.getCellValue(CONFIG.FIELDS.YEAR);
-            const recordYear = yearField?.name || yearField;
-            return recordYear == currentYear;
+            // Year is now a multi-select field (array) with potential year spans
+            const years = Array.isArray(yearField) ? yearField.map(y => y.name || y) : [];
+            return years.some(y => yearMatchesOrInSpan(y, currentYear));
         });
 
         if (currentYearMissing.length > 0) {
@@ -471,7 +494,7 @@ async function runPreflightValidation() {
 
         // Count total critical missing (all fields are critical for data integrity and export)
         const criticalMissingCount = missingBillId.length + missingWebsiteBillId.length + missingState.length + missingBillType.length + missingBillNumber.length;
-        
+
         // Only add to critical issues if we actually found missing fields
         if (criticalMissingCount > 0) {
             // Build summary table showing only fields that are actually missing
@@ -519,7 +542,7 @@ async function runPreflightValidation() {
                     specificBills.push(`${identifier}: Missing BillNumber`);
                 });
             }
-            
+
             validation.critical.push({
                 type: '📋 Missing Required Fields',
                 count: criticalMissingCount,
@@ -532,7 +555,7 @@ async function runPreflightValidation() {
         }
         }
     }
-    
+
     // Check 4: Duplicate bills - using Website Bill ID as unique identifier for export
     // NOTE: Fetch all bills and filter in JavaScript since filterByFormula on Year field is unreliable
     const allBills = await billsTable.selectRecordsAsync({
@@ -545,9 +568,11 @@ async function runPreflightValidation() {
     allBills.records.forEach(record => {
         // Filter to current year in JavaScript (more reliable than filterByFormula)
         const yearField = record.getCellValue(CONFIG.FIELDS.YEAR);
-        const recordYear = yearField?.name || yearField;
+        // Year is now a multi-select field (array) with potential year spans
+        const years = Array.isArray(yearField) ? yearField.map(y => y.name || y) : [];
+        const matchesCurrentYear = years.some(y => yearMatchesOrInSpan(y, currentYear));
 
-        if (recordYear != currentYear) {
+        if (!matchesCurrentYear) {
             return; // Skip bills from other years
         }
 
@@ -577,22 +602,22 @@ async function runPreflightValidation() {
         });
         validation.passed = false;
     }
-    
+
     // Display validation results
     displayValidationResults(validation);
-    
+
     // Ask user to proceed if critical issues found
     if (!validation.passed) {
         // Build a clear message about what critical issues were found
         let criticalMessage = '🚨 CRITICAL ISSUES FOUND:\n\n';
-        
+
         validation.critical.forEach(issue => {
             criticalMessage += `❌ ${issue.type}: ${issue.count} ${issue.count === 1 ? 'record' : 'records'}\n`;
             criticalMessage += `   Impact: ${issue.impact}\n\n`;
         });
-        
+
         criticalMessage += 'Do you want to continue with the export despite these critical issues?';
-        
+
         const proceed = await input.buttonsAsync(
             criticalMessage,
             [
@@ -600,13 +625,13 @@ async function runPreflightValidation() {
                 {label: '❌ Cancel Export', value: false}
             ]
         );
-        
+
         return {
             shouldProceed: proceed,
             criticalIssuesIgnored: proceed ? validation.critical : null
         };
     }
-    
+
     return {
         shouldProceed: true,
         criticalIssuesIgnored: null
@@ -629,7 +654,7 @@ function displayValidationResults(validation) {
                 if (issue.fieldSummary) {
                     // Display missing fields summary
                     output.markdown(`\n**Missing fields breakdown:** ${issue.fieldSummary}`);
-                    
+
                     if (issue.specificBills) {
                         output.markdown(`\n**Specific bills to fix:**`);
                         issue.specificBills.forEach(bill => {
@@ -650,7 +675,7 @@ function displayValidationResults(validation) {
             }
         });
     }
-    
+
     if (validation.warnings.length > 0) {
         output.markdown('### ⚠️ Warnings\n');
         validation.warnings.forEach(warning => {
@@ -673,7 +698,7 @@ function displayValidationResults(validation) {
             output.markdown('');
         });
     }
-    
+
     if (validation.info.length > 0) {
         output.markdown('### ℹ️ Information\n');
         validation.info.forEach(info => {
@@ -683,11 +708,11 @@ function displayValidationResults(validation) {
             output.markdown('');
         });
     }
-    
+
     // Show success message when there are no actual critical issues
-    const hasActualCriticalIssues = validation.critical.length > 0 && 
+    const hasActualCriticalIssues = validation.critical.length > 0 &&
         validation.critical.some(issue => issue.count > 0);
-    
+
     if (!hasActualCriticalIssues && validation.warnings.length === 0) {
         output.markdown('### ✅ All Validation Checks Passed\n');
         output.markdown('No critical issues or warnings found. Ready to export!');
@@ -702,23 +727,37 @@ function displayValidationResults(validation) {
  */
 async function processWithProgress(records, metrics) {
     const total = records.length;
-    
+
     const exportRecords = [];
     const errors = [];
-    
+    const processedWebsiteBillIds = new Set(); // Track which Website Bill IDs we've already exported
+
     output.markdown(`\n### 📊 Processing ${total} Bills\n`);
-    
+
     for (let i = 0; i < records.length; i++) {
         const record = records[i];
-        
+
         try {
+            // Get Website Bill ID early to check for duplicates
+            const websiteBillId = record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID);
+
+            // Skip if we've already processed this Website Bill ID (prevents duplicate exports)
+            if (websiteBillId && processedWebsiteBillIds.has(websiteBillId)) {
+                metrics.recordBill(record, false);
+                errors.push({
+                    bill: websiteBillId,
+                    error: `Duplicate Website Bill ID - already exported (first occurrence takes precedence)`
+                });
+                continue;
+            }
+
             // Check date validation first
             const dateCheck = checkDateValidation(record);
             if (!dateCheck.valid) {
                 metrics.recordDateError();
                 metrics.recordBill(record, false);
                 errors.push({
-                    bill: record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || record.getCellValue(CONFIG.FIELDS.BILL_ID) ||
+                    bill: websiteBillId || record.getCellValue(CONFIG.FIELDS.BILL_ID) ||
                          `${record.getCellValue(CONFIG.FIELDS.STATE)?.name || ''}-${record.getCellValue(CONFIG.FIELDS.BILL_TYPE)?.name || ''}${record.getCellValue(CONFIG.FIELDS.BILL_NUMBER) || ''}`,
                     error: `Date validation: ${dateCheck.message}`
                 });
@@ -730,12 +769,12 @@ async function processWithProgress(records, metrics) {
             if (!validation.valid) {
                 metrics.recordBill(record, false);
                 errors.push({
-                    bill: record.getCellValue(CONFIG.FIELDS.WEBSITE_BILL_ID) || record.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown',
+                    bill: websiteBillId || record.getCellValue(CONFIG.FIELDS.BILL_ID) || 'Unknown',
                     error: `Missing required fields: ${validation.missingFields.join(', ')}`
                 });
                 continue;
             }
-            
+
             // Transform the record
             const webRecord = await transformRecord(record, metrics);
             if (webRecord) {
@@ -743,11 +782,16 @@ async function processWithProgress(records, metrics) {
                     fields: webRecord
                 });
                 metrics.recordBill(record, true);
-                
+
                 // Track state
                 metrics.recordState(webRecord.State);
+
+                // Mark this Website Bill ID as processed to prevent duplicates
+                if (websiteBillId) {
+                    processedWebsiteBillIds.add(websiteBillId);
+                }
             }
-            
+
         } catch (error) {
             metrics.recordBill(record, false);
             errors.push({
@@ -756,10 +800,10 @@ async function processWithProgress(records, metrics) {
                 error: error.message
             });
         }
-        
+
         // We'll show progress summary at the end instead of clearing output
     }
-    
+
     return { exportRecords, errors };
 }
 
@@ -780,17 +824,17 @@ async function transformRecord(record, metrics) {
     if (hasAllFields) {
         metrics.metrics.recordsWithAllFields++;
     }
-    
+
     // Handle rich text fields - ensure 100% fidelity of existing blurbs
     let websiteBlurbValue = record.getCellValue(CONFIG.FIELDS.WEBSITE_BLURB);
     let websiteBlurb = '';
-    
+
     // Check if there's a source blurb
-    const hasSourceBlurb = websiteBlurbValue && 
+    const hasSourceBlurb = websiteBlurbValue &&
         (typeof websiteBlurbValue === 'string' && websiteBlurbValue.trim() !== '') ||
-        (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null && 
+        (typeof websiteBlurbValue === 'object' && websiteBlurbValue !== null &&
          (websiteBlurbValue.text || websiteBlurbValue.toString()));
-    
+
     if (websiteBlurbValue) {
         if (typeof websiteBlurbValue === 'string') {
             websiteBlurb = websiteBlurbValue;
@@ -798,26 +842,26 @@ async function transformRecord(record, metrics) {
             websiteBlurb = websiteBlurbValue.text || websiteBlurbValue.toString() || '';
         }
     }
-    
+
     websiteBlurb = websiteBlurb.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
-    
+
     // Track blurb processing fidelity - ensure 100% coverage of existing blurbs
     const hasExportedBlurb = websiteBlurb && websiteBlurb.length > 0;
     metrics.recordBlurbProcessing(hasSourceBlurb, hasExportedBlurb);
-    
+
     // Format dates
     const formatDate = (dateValue) => {
         if (!dateValue) {
             return null;
         }
-        
+
         if (dateValue instanceof Date) {
             const year = dateValue.getFullYear();
             const month = String(dateValue.getMonth() + 1).padStart(2, '0');
             const day = String(dateValue.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
-        
+
         if (typeof dateValue === 'string') {
             const parsedDate = new Date(dateValue);
             if (!isNaN(parsedDate.getTime())) {
@@ -828,10 +872,10 @@ async function transformRecord(record, metrics) {
             }
             return dateValue;
         }
-        
+
         return String(dateValue);
     };
-    
+
     // Extract dates
     const lastActionDate = formatDate(record.getCellValue(CONFIG.FIELDS.LAST_ACTION));
     const introducedDate = formatDate(record.getCellValue(CONFIG.FIELDS.INTRODUCED_DATE));
@@ -860,25 +904,25 @@ async function transformRecord(record, metrics) {
     const hasPositive = intentValues.some(val => val.includes('Positive'));
     const hasNeutral = intentValues.some(val => val.includes('Neutral'));
     const hasRestrictive = intentValues.some(val => val.includes('Restrictive'));
-    
+
     // Track intent distribution
     metrics.recordIntent(hasPositive, hasNeutral, hasRestrictive);
-    
+
     // Process action types
     const actionType = record.getCellValue(CONFIG.FIELDS.ACTION_TYPE) || [];
-    const actionTypeArray = Array.isArray(actionType) 
-        ? actionType.map(i => i.name) 
-        : typeof actionType === 'string' 
-            ? actionType.split(',').map(i => i.trim()) 
+    const actionTypeArray = Array.isArray(actionType)
+        ? actionType.map(i => i.name)
+        : typeof actionType === 'string'
+            ? actionType.split(',').map(i => i.trim())
             : [];
-    
+
     const ballotInitiative = actionTypeArray.includes('Ballot Initiative') ? '1' : '0';
     const courtCase = actionTypeArray.includes('Court Case') ? '1' : '0';
 
     // Get subpolicies with tracking
     const specificPoliciesResult = getSpecificPolicies(record.getCellValue(CONFIG.FIELDS.SPECIFIC_POLICIES_ACCESS));
     metrics.recordPolicy(specificPoliciesResult.policies);
-    
+
     // Track unsupported subpolicies
     if (specificPoliciesResult.unsupportedFound.length > 0) {
         metrics.addWarning({
@@ -887,7 +931,7 @@ async function transformRecord(record, metrics) {
             policies: specificPoliciesResult.unsupportedFound
         });
     }
-    
+
     const subpolicies = specificPoliciesResult.policies.slice(0, 10);
     while (subpolicies.length < 10) {
         subpolicies.push('');
@@ -933,13 +977,13 @@ async function saveQualityReport(metrics) {
     try {
         const reportTable = base.getTable(CONFIG.QUALITY_REPORTS_TABLE);
         const report = metrics.generateReport();
-        
+
         // Validate data before creating record
         const successRate = parseFloat(report.summary.successRate);
         if (isNaN(successRate)) {
             throw new Error('Success rate calculation resulted in NaN');
         }
-        
+
         const recordData = {
             'Export Date': new Date(),
             'Quality Score': Math.round(report.summary.qualityScore.total),
@@ -958,22 +1002,22 @@ async function saveQualityReport(metrics) {
             'States Count': report.coverage.statesCount || 0,
             'Critical Issues Ignored': metrics.metrics.proceededDespiteCriticalIssues ? 'YES' : 'NO',
             'Critical Issues Count': metrics.metrics.criticalIssuesIgnored.length || 0,
-            'Critical Issues Details': metrics.metrics.proceededDespiteCriticalIssues ? 
+            'Critical Issues Details': metrics.metrics.proceededDespiteCriticalIssues ?
                 JSON.stringify(metrics.metrics.criticalIssuesIgnored).substring(0, 5000) : '',
             'Recommendations': JSON.stringify(report.recommendations).substring(0, 50000), // Limit size
             'Full Report': JSON.stringify(report, null, 2).substring(0, 100000) // Limit size
         };
-        
+
         output.markdown(`\n📊 Creating quality report record...`);
         await reportTable.createRecordAsync(recordData);
-        
+
         output.markdown('✅ Quality report saved to Export Quality Reports table');
-        
+
     } catch (error) {
         output.markdown(`\n❌ Could not save quality report:`);
         output.markdown(`   Error: ${error.message}`);
         output.markdown(`   Make sure the '${CONFIG.QUALITY_REPORTS_TABLE}' table exists with correct field structure`);
-        
+
         // List the required fields for user reference
         output.markdown(`\n📋 Required table structure:`);
         output.markdown(`   Table name: "${CONFIG.QUALITY_REPORTS_TABLE}"`);
@@ -988,19 +1032,19 @@ async function saveQualityReport(metrics) {
 function generateEnhancedSummary(exportRecords, errors, metrics) {
     const report = metrics.generateReport();
     const summary = [`# 📊 Website Export Summary\n`];
-    
+
     // Quality score banner
     const score = report.summary.qualityScore;
     const scoreEmoji = score.total >= 90 ? '🏆' : score.total >= 80 ? '✅' : score.total >= 70 ? '⚠️' : '❌';
-    
+
     summary.push(`## ${scoreEmoji} Quality Score: ${score.total}/100 (${score.grade})\n`);
-    
+
     // Score breakdown
     summary.push(`### Score Components`);
     summary.push(`- **Completeness**: ${score.completeness}% - Data field coverage`);
     summary.push(`- **Accuracy**: ${score.accuracy}% - Valid dates and formats`);
     summary.push(`- **Consistency**: ${score.consistency}% - No duplicates\n`);
-    
+
     // Export statistics
     summary.push(`## 📈 Export Statistics`);
     summary.push(`- **Total Processed**: ${report.summary.totalRecords}`);
@@ -1008,7 +1052,7 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
     summary.push(`- **Failed**: ${errors.length}`);
     summary.push(`- **Success Rate**: ${report.summary.successRate}%`);
     summary.push(`- **Processing Time**: ${report.summary.duration.toFixed(1)} seconds`);
-    
+
     // Show if critical issues were ignored
     if (metrics.metrics.proceededDespiteCriticalIssues) {
         summary.push(`\n⚠️ **WARNING**: Export proceeded despite ${metrics.metrics.criticalIssuesIgnored.length} critical validation issue(s):`);
@@ -1017,7 +1061,7 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
         });
     }
     summary.push('');
-    
+
     // Coverage analysis
     summary.push(`## 🗺️ Coverage Analysis`);
     summary.push(`- **States Represented**: ${report.coverage.statesCount}/50`);
@@ -1027,28 +1071,28 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
     summary.push(`  - Neutral: ${report.coverage.intentDistribution.neutral}`);
     summary.push(`  - Restrictive: ${report.coverage.intentDistribution.restrictive}`);
     summary.push(`  - No Intent: ${report.coverage.intentDistribution.none}\n`);
-    
+
     // Website blurb fidelity (critical metric)
     summary.push(`## 📝 Website Blurb Fidelity`);
     summary.push(`- **Bills with Source Blurbs**: ${report.completeness.recordsWithSourceBlurb}`);
     summary.push(`- **Successfully Exported**: ${report.completeness.recordsWithExportedBlurb}`);
     summary.push(`- **Processing Failures**: ${report.completeness.blurbProcessingFailures}`);
     summary.push(`- **Fidelity Rate**: ${report.completeness.blurbFidelityPercent}%`);
-    
+
     if (report.completeness.blurbProcessingFailures > 0) {
         summary.push(`- ❌ **CRITICAL**: ${report.completeness.blurbProcessingFailures} existing blurbs failed to export!`);
     } else {
         summary.push(`- ✅ **Perfect fidelity**: All existing blurbs exported successfully`);
     }
     summary.push('');
-    
+
     // Other data quality issues
     if (report.accuracy.dateValidationErrors > 0) {
         summary.push(`## ⚠️ Data Quality Issues`);
         summary.push(`- **Date Validation Errors**: ${report.accuracy.dateValidationErrors}`);
         summary.push('');
     }
-    
+
     // Recommendations
     if (report.recommendations.length > 0) {
         summary.push(`## 💡 Recommendations`);
@@ -1059,7 +1103,7 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
         });
         summary.push('');
     }
-    
+
     // Error details (limited)
     if (errors.length > 0) {
         summary.push(`## ❌ Export Errors (First 10)`);
@@ -1070,22 +1114,57 @@ function generateEnhancedSummary(exportRecords, errors, metrics) {
             summary.push(`- ... and ${errors.length - 10} more errors`);
         }
     }
-    
+
     return summary.join('\n');
 }
 
 // ===== HELPER FUNCTIONS =====
 
+/**
+ * Check if a year value matches the target year or falls within a year span
+ *
+ * @param {string} yearValue - Year value which can be a single year like "2026" or a span like "2025-2026"
+ * @param {string} targetYear - The target year to check against
+ * @returns {boolean} - True if the year matches or falls within the span
+ */
+function yearMatchesOrInSpan(yearValue, targetYear) {
+    if (!yearValue) return false;
+
+    const yearString = String(yearValue);
+
+    // Check for exact match
+    if (yearString === targetYear) return true;
+
+    // Check for year span (e.g., "2025-2026" or "2024-2026")
+    if (yearString.includes('-')) {
+        const parts = yearString.split('-').map(p => p.trim());
+        if (parts.length === 2) {
+            const startYear = parseInt(parts[0]);
+            const endYear = parseInt(parts[1]);
+            const target = parseInt(targetYear);
+
+            if (!isNaN(startYear) && !isNaN(endYear) && !isNaN(target)) {
+                // Handle both ascending and descending ranges
+                const min = Math.min(startYear, endYear);
+                const max = Math.max(startYear, endYear);
+                return target >= min && target <= max;
+            }
+        }
+    }
+
+    return false;
+}
+
 function checkDateValidation(record) {
     const dateValidation = record.getCellValue(CONFIG.FIELDS.DATE_VALIDATION);
-    
+
     if (dateValidation && dateValidation.trim() !== '') {
         return {
             valid: false,
             message: dateValidation
         };
     }
-    
+
     return {
         valid: true,
         message: null
@@ -1113,16 +1192,16 @@ function getSpecificPolicies(policyField) {
     if (!policyField) {
         return { policies: [], unsupportedFound: [] };
     }
-    
+
     const cleanPolicyString = (str) => {
         if (typeof str !== 'string') {
             return str;
         }
         return str.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
     };
-    
+
     let policies = [];
-    
+
     if (Array.isArray(policyField)) {
         policies = policyField.map(p => {
             const name = p.name || p;
@@ -1134,7 +1213,7 @@ function getSpecificPolicies(policyField) {
             .map(p => cleanPolicyString(p))
             .filter(p => p);
     }
-    
+
     const unsupported = [];
     const filtered = policies.filter(policy => {
         if (CONFIG.UNSUPPORTED_SUBPOLICIES.includes(policy)) {
@@ -1143,7 +1222,7 @@ function getSpecificPolicies(policyField) {
         }
         return true;
     });
-    
+
     return {
         policies: filtered,
         unsupportedFound: unsupported
@@ -1163,44 +1242,44 @@ async function generateWebsiteExport() {
     output.markdown(`**Version:** Enhanced with Smart Validation & GitHub Integration (June 2025)\n`);
     output.markdown(`**Source:** [GitHub Repository](https://github.com/Frydafly/guttmacher-legislative-tracker)\n`);
     output.markdown(`Export started at ${new Date().toLocaleString()}\n`);
-    
+
     // Initialize quality metrics
     const metrics = new QualityMetrics();
-    
+
     // Run pre-flight validation
     const validationResult = await runPreflightValidation();
     if (!validationResult.shouldProceed) {
         output.markdown('\n❌ Export cancelled by user due to validation issues.');
         return;
     }
-    
+
     // Track if critical issues were ignored
     if (validationResult.criticalIssuesIgnored) {
         metrics.recordCriticalIssuesIgnored(validationResult.criticalIssuesIgnored);
     }
-    
+
     // Add separator before continuing with export
     output.markdown('\n---\n');
     output.markdown('## 📦 Starting Export Process\n');
-    
+
     // Get tables
     const billsTable = base.getTable('Bills');
     const exportTable = base.getTable('Website Exports');
-    
+
     // Clear existing export records
     try {
         output.markdown('\n### 🗑️ Clearing Previous Export\n');
         const existingRecords = await exportTable.selectRecordsAsync();
-        
+
         if (existingRecords.records.length > 0) {
             output.markdown(`Deleting ${existingRecords.records.length} existing records...`);
-            
+
             const recordIds = existingRecords.records.map(r => r.id);
             for (let i = 0; i < recordIds.length; i += 50) {
                 const batchIds = recordIds.slice(i, i + 50);
                 await exportTable.deleteRecordsAsync(batchIds);
             }
-            
+
             output.markdown('✅ Previous export cleared\n');
         } else {
             output.markdown('No existing records to delete\n');
@@ -1208,7 +1287,7 @@ async function generateWebsiteExport() {
     } catch (error) {
         output.markdown(`⚠️ Error clearing export table: ${error.message}\n`);
     }
-    
+
     // Get bills for current year only
     // NOTE: Fetch all bills and filter in JavaScript since filterByFormula on Year field is unreliable
     const currentYear = new Date().getFullYear().toString();
@@ -1217,13 +1296,14 @@ async function generateWebsiteExport() {
     // Filter to current year in JavaScript
     const currentYearRecords = allRecords.records.filter(record => {
         const yearField = record.getCellValue(CONFIG.FIELDS.YEAR);
-        const recordYear = yearField?.name || yearField;
-        return recordYear == currentYear;
+        // Year is now a multi-select field (array) with potential year spans
+        const years = Array.isArray(yearField) ? yearField.map(y => y.name || y) : [];
+        return years.some(y => yearMatchesOrInSpan(y, currentYear));
     });
 
     // Process bills with progress tracking
     const { exportRecords, errors } = await processWithProgress(currentYearRecords, metrics);
-    
+
     // Show processing summary
     output.markdown(`\n✅ Processing complete: ${exportRecords.length} successful, ${errors.length} failed\n`);
 
@@ -1231,21 +1311,21 @@ async function generateWebsiteExport() {
 
     // Create export records
     let exportSuccessful = false;
-    
+
     if (exportRecords.length > 0) {
         output.markdown('\n### 💾 Creating Export Records\n');
         try {
             for (let i = 0; i < exportRecords.length; i += 50) {
                 const batch = exportRecords.slice(i, i + 50);
                 await exportTable.createRecordsAsync(batch);
-                
+
                 const progress = Math.round((i + 50) / exportRecords.length * 100);
                 output.markdown(`Creating records: ${Math.min(progress, 100)}% complete`);
             }
-            
+
             output.markdown(`\n✅ Successfully created ${exportRecords.length} export records`);
             exportSuccessful = true;
-            
+
         } catch (error) {
             output.markdown(`\n❌ Error creating export records: ${error.message}`);
             output.markdown(`\n⚠️ Export failed - no quality report will be saved`);
@@ -1253,23 +1333,23 @@ async function generateWebsiteExport() {
     } else {
         output.markdown('\n⚠️ No records to export');
     }
-    
+
     // Only save quality report if export was successful
     if (exportSuccessful) {
         await saveQualityReport(metrics);
     }
-    
+
     // Generate and display enhanced summary
     const summary = generateEnhancedSummary(exportRecords, errors, metrics);
     output.markdown('\n' + summary);
-    
+
     // Show completion time with GitHub link
     if (exportSuccessful) {
         output.markdown(`\n**✅ Export completed successfully at ${new Date().toLocaleString()}**`);
     } else {
         output.markdown(`\n**❌ Export failed at ${new Date().toLocaleString()}**`);
     }
-    
+
     // Footer with GitHub information
     output.markdown(`\n---\n`);
     output.markdown(`💻 **Script Information:** Enhanced with Smart Validation & GitHub Integration | [View Source & Documentation](https://github.com/Frydafly/guttmacher-legislative-tracker/tree/main/airtable-scripts/website-export)`);
